@@ -15,6 +15,7 @@ DreamZSH — это модульная альтернатива тяжелове
 ## 📦 Установка
 
 ```bash
-git clone https://github.com/ВАШ_АККАУНТ/dreamzsh.git ~/dreamzsh
+git clone https://github.com/BoyToyDev/dreamzsh.git ~/dreamzsh
 cd ~/dreamzsh
+chmod +x install.sh
 ./install.sh
