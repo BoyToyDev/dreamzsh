@@ -1,0 +1,12 @@
+# Backup files
+*.backup*
+*.bak
+*.swp
+*~
+# Theme settings
+.theme_settings
+# OS files
+.DS_Store
+Thumbs.db
+# History
+.zsh_history
