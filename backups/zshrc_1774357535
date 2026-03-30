@@ -1,0 +1,35 @@
+export DREAMZSH_DIR="/root/dreamzsh"
+
+HISTSIZE=10000
+SAVEHIST=10000
+setopt HIST_IGNORE_ALL_DUPS
+setopt HIST_REDUCE_BLANKS
+
+autoload -Uz compinit && compinit
+zstyle ':completion:*' menu select
+
+setopt interactivecomments
+setopt NO_CASE_GLOB
+
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    alias ls='ls -G'
+else
+    alias ls='ls --color=auto'
+fi
+
+source $DREAMZSH_DIR/themes/custom.zsh-theme
+
+# DreamZSH aliases
+alias dreamzsh='$DREAMZSH_DIR/manager.sh'
+alias dreamzsh-theme='$DREAMZSH_DIR/theme-builder.sh'
+alias reload='source ~/.zshrc'
+
+# History settings
+HISTFILE="$HOME/.zsh_history"
+HISTSIZE=10000
+SAVEHIST=10000
+setopt HIST_IGNORE_ALL_DUPS
+setopt HIST_REDUCE_BLANKS
+setopt HIST_SAVE_NO_DUPS
+setopt INC_APPEND_HISTORY
+setopt EXTENDED_HISTORY
