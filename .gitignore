@@ -1,0 +1,6 @@
+backups/
+*.tar.gz
+*.bak
+*.swp
+*~
+.zcompdump*

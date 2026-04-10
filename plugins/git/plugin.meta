@@ -1,0 +1,5 @@
+plugin_name="Git tools"
+description="Basic Git aliases and helper functions for everyday work."
+version="1.0.0"
+author="DreamZSH"
+tags="git vcs aliases"

@@ -1,0 +1,186 @@
+#!/usr/bin/env zsh
+
+setopt NO_UNSET 2>/dev/null || true
+
+if [[ -z "${DREAMZSH_DIR:-}" ]]; then
+  SCRIPT_DIR="${0:A:h}"
+  export DREAMZSH_DIR="${SCRIPT_DIR:h}"
+fi
+
+source "${DREAMZSH_DIR}/core/utils.zsh" || exit 1
+source "${DREAMZSH_DIR}/core/config.zsh" || exit 1
+source "${DREAMZSH_DIR}/core/help.zsh" || exit 1
+source "${DREAMZSH_DIR}/core/plugins.zsh" || exit 1
+source "${DREAMZSH_DIR}/core/theme.zsh" || exit 1
+source "${DREAMZSH_DIR}/core/profiles.zsh" || exit 1
+source "${DREAMZSH_DIR}/core/status.zsh" || exit 1
+source "${DREAMZSH_DIR}/core/backup.zsh" || exit 1
+source "${DREAMZSH_DIR}/core/doctor.zsh" || exit 1
+
+dz::config::load || exit 1
+
+command_name="${1:-help}"
+shift || true
+
+main_commands=(plugin theme profile backup status config doctor reload help)
+plugin_subcommands=(list enable disable info help)
+theme_subcommands=(list set preview current help)
+profile_subcommands=(list info apply current help)
+backup_subcommands=(create list restore clean help)
+
+case "$command_name" in
+  help|-h|--help)
+    dz::help::main
+    ;;
+
+  status)
+    dz::status::run
+    ;;
+
+  config)
+    dz::config::print
+    ;;
+
+  doctor)
+    dz::doctor::run || exit 1
+    ;;
+
+  reload)
+    dz::info "Run this in your shell:"
+    print -r -- 'source "$HOME/.zshrc"'
+    ;;
+
+  plugin)
+    subcommand="${1:-help}"
+    shift || true
+    case "$subcommand" in
+      help|-h|--help) dz::help::plugin ;;
+      list) dz::plugin::list ;;
+      enable)
+        (( $# > 0 )) || {
+          dz::usage_error "Missing plugin name." "Usage: dreamzsh plugin enable <name...>"
+          exit 1
+        }
+        dz::plugin::enable "$@" || exit 1
+        ;;
+      disable)
+        (( $# > 0 )) || {
+          dz::usage_error "Missing plugin name." "Usage: dreamzsh plugin disable <name...>"
+          exit 1
+        }
+        dz::plugin::disable "$@" || exit 1
+        ;;
+      info)
+        [[ -n "${1:-}" ]] || {
+          dz::usage_error "Missing plugin name." "Usage: dreamzsh plugin info <name>"
+          exit 1
+        }
+        dz::plugin::info "$1" || exit 1
+        ;;
+      *)
+        dz::unknown_command "$subcommand" "${plugin_subcommands[@]}"
+        dz::help::plugin
+        exit 1
+        ;;
+    esac
+    ;;
+
+  theme)
+    subcommand="${1:-help}"
+    shift || true
+    case "$subcommand" in
+      help|-h|--help) dz::help::theme ;;
+      list) dz::theme::list ;;
+      set)
+        [[ -n "${1:-}" ]] || {
+          dz::usage_error "Missing theme name." "Usage: dreamzsh theme set <name>"
+          exit 1
+        }
+        dz::theme::set "$1" || exit 1
+        ;;
+      preview)
+        [[ -n "${1:-}" ]] || {
+          dz::usage_error "Missing theme name." "Usage: dreamzsh theme preview <name>"
+          exit 1
+        }
+        dz::theme::preview "$1" || exit 1
+        ;;
+      current)
+        dz::theme::current
+        ;;
+      *)
+        dz::unknown_command "$subcommand" "${theme_subcommands[@]}"
+        dz::help::theme
+        exit 1
+        ;;
+    esac
+    ;;
+
+  profile)
+    subcommand="${1:-help}"
+    shift || true
+    case "$subcommand" in
+      help|-h|--help) dz::help::profile ;;
+      list) dz::profile::list ;;
+      info)
+        [[ -n "${1:-}" ]] || {
+          dz::usage_error "Missing profile name." "Usage: dreamzsh profile info <name>"
+          exit 1
+        }
+        dz::profile::info "$1" || exit 1
+        ;;
+      apply)
+        [[ -n "${1:-}" ]] || {
+          dz::usage_error "Missing profile name." "Usage: dreamzsh profile apply <name>"
+          exit 1
+        }
+        dz::profile::apply "$1" || exit 1
+        ;;
+      current)
+        dz::profile::current
+        ;;
+      *)
+        dz::unknown_command "$subcommand" "${profile_subcommands[@]}"
+        dz::help::profile
+        exit 1
+        ;;
+    esac
+    ;;
+
+  backup)
+    subcommand="${1:-help}"
+    shift || true
+    case "$subcommand" in
+      help|-h|--help)
+        dz::help::backup
+        ;;
+      create)
+        dz::backup::create "$@" || exit 1
+        ;;
+      list)
+        dz::backup::list
+        ;;
+      restore)
+        [[ -n "${1:-}" ]] || {
+          dz::usage_error "Missing backup archive name." "Usage: dreamzsh backup restore <archive>"
+          exit 1
+        }
+        dz::backup::restore "$1" || exit 1
+        ;;
+      clean)
+        dz::backup::clean "${1:-}" || exit 1
+        ;;
+      *)
+        dz::unknown_command "$subcommand" "${backup_subcommands[@]}"
+        dz::help::backup
+        exit 1
+        ;;
+    esac
+    ;;
+
+  *)
+    dz::unknown_command "$command_name" "${main_commands[@]}"
+    dz::help::main
+    exit 1
+    ;;
+esac

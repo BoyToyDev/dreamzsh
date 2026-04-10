@@ -1,1 +1,0 @@
-PROMPT='%F{cyan}%~%f %F{magenta}>%f '

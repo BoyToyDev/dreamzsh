@@ -1,0 +1,5 @@
+plugin_name="Navigation tools"
+description="Directory navigation helpers, aliases and directory stack options."
+version="1.0.0"
+author="DreamZSH"
+tags="navigation cd filesystem"

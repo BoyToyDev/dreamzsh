@@ -1,0 +1,5 @@
+plugin_name="History tools"
+description="Improves shell history behavior and adds search helpers."
+version="1.0.0"
+author="DreamZSH"
+tags="history shell productivity"

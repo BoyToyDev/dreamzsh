@@ -1,0 +1,89 @@
+#compdef dreamzsh dz
+
+local -a commands plugin_subcommands theme_subcommands profile_subcommands plugins themes profiles
+
+commands=(
+  'plugin:Manage plugins'
+  'theme:Manage themes'
+  'profile:Manage profiles'
+  'status:Show current DreamZSH status'
+  'config:Show current configuration'
+  'doctor:Check installation and configuration'
+  'reload:Reload DreamZSH in current shell'
+  'help:Show help'
+)
+
+plugin_subcommands=(
+  'list:List plugins'
+  'enable:Enable one or more plugins'
+  'disable:Disable one or more plugins'
+  'info:Show plugin information'
+  'help:Show plugin help'
+)
+
+theme_subcommands=(
+  'list:List themes'
+  'set:Set active theme'
+  'preview:Preview theme without saving'
+  'current:Show current theme'
+  'help:Show theme help'
+)
+
+profile_subcommands=(
+  'list:List profiles'
+  'info:Show profile information'
+  'apply:Apply profile'
+  'current:Show current profile'
+  'help:Show profile help'
+)
+
+plugins=(${(f)"$(${DREAMZSH_DIR:-$HOME/.dreamzsh}/bin/dreamzsh plugin list 2>/dev/null | awk 'NR>2 {print $1}')"})
+themes=(${(f)"$(${DREAMZSH_DIR:-$HOME/.dreamzsh}/bin/dreamzsh theme list 2>/dev/null)"})
+profiles=(${(f)"$(${DREAMZSH_DIR:-$HOME/.dreamzsh}/bin/dreamzsh profile list 2>/dev/null | awk 'NR>2 {print $1}')"})
+
+
+if (( CURRENT == 2 )); then
+  _describe 'command' commands
+  return
+fi
+
+case "${words[2]:-}" in
+  plugin)
+    if (( CURRENT == 3 )); then
+      _describe 'plugin command' plugin_subcommands
+      return
+    fi
+    case "${words[3]:-}" in
+      enable|disable|info)
+        _describe 'plugin' plugins
+        return
+        ;;
+    esac
+    ;;
+  theme)
+    if (( CURRENT == 3 )); then
+      _describe 'theme command' theme_subcommands
+      return
+    fi
+    case "${words[3]:-}" in
+      set|preview)
+        _describe 'theme' themes
+        return
+        ;;
+    esac
+    ;;
+  profile)
+    if (( CURRENT == 3 )); then
+      _describe 'profile command' profile_subcommands
+      return
+    fi
+    case "${words[3]:-}" in
+      info|apply)
+        _describe 'profile' profiles
+        return
+        ;;
+    esac
+    ;;
+esac
+
+_describe 'command' commands
