@@ -34,6 +34,7 @@ DreamZSH takes a different approach:
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/BoyToyDev/dreamzsh/main/install.sh)"
 
 After installation, you can start using it immediately.
+```
 
 ⚙️ Configuration
 
