@@ -10,6 +10,8 @@ source "${DREAMZSH_DIR}/core/config.zsh" || return 1
 
 dz::plugin::list() {
   local dir name plugin_state meta_file description
+  local plugin_name="" version="" author="" tags=""
+
   [[ -d "$DREAMZSH_PLUGINS_DIR" ]] || return 0
 
   printf '%-18s %-10s %s\n' "PLUGIN" "STATUS" "DESCRIPTION"
@@ -17,25 +19,27 @@ dz::plugin::list() {
 
   for dir in "$DREAMZSH_PLUGINS_DIR"/*(N/); do
     [[ -f "$dir/plugin.zsh" ]] || continue
+
     name="${dir:t}"
     description=""
+    plugin_name=""
+    version=""
+    author=""
+    tags=""
 
     if dz::array_contains "$name" "${DREAMZSH_PLUGINS[@]}"; then
-      plugin_state="enabled"
+      plugin_state="${DZ_COLOR_GREEN}enabled${DZ_COLOR_RESET}"
     else
-      plugin_state="disabled"
+      plugin_state="${DZ_COLOR_RED}disabled${DZ_COLOR_RESET}"
     fi
 
     meta_file="$(dz::plugin_meta_file "$name")"
     if [[ -f "$meta_file" ]]; then
-      local plugin_name="" version="" author="" tags=""
       source "$meta_file" 2>/dev/null
-      description="${description:-}"
     fi
 
     [[ -n "$description" ]] || description="-"
-
-    printf '%-18s %-10s %s\n' "$name" "$plugin_state" "$description"
+    print -P -- "$(printf '%-18s %-10s %s' "$name" "$plugin_state" "$description")"
   done
 }
 
@@ -79,9 +83,9 @@ dz::plugin::info() {
   fi
 
   if dz::array_contains "$name" "${DREAMZSH_PLUGINS[@]}"; then
-    print -r -- "Status: enabled"
+    print -P -- "Status: ${DZ_COLOR_GREEN}enabled${DZ_COLOR_RESET}"
   else
-    print -r -- "Status: disabled"
+    print -P -- "Status: ${DZ_COLOR_RED}disabled${DZ_COLOR_RESET}"
   fi
 
   readme_file="$dir/README.md"
@@ -90,6 +94,81 @@ dz::plugin::info() {
     print -r -- "--- README ---"
     cat "$readme_file"
   fi
+}
+
+dz::plugin::create() {
+  local name="$1"
+  local dir plugin_file meta_file readme_file
+
+  [[ -n "$name" ]] || {
+    dz::error "Plugin name is required"
+    return 1
+  }
+
+  dz::is_valid_name "$name" || {
+    dz::error "Invalid plugin name: $name"
+    return 1
+  }
+
+  dir="$(dz::plugin_dir "$name")"
+
+  if [[ -e "$dir" ]]; then
+    dz::error "Plugin already exists: $name"
+    return 1
+  fi
+
+  mkdir -p "$dir" || {
+    dz::error "Failed to create plugin directory: $dir"
+    return 1
+  }
+
+  plugin_file="$dir/plugin.zsh"
+  meta_file="$dir/plugin.meta"
+  readme_file="$dir/README.md"
+
+  cat > "$plugin_file" <<EOF_PLUGIN
+# DreamZSH plugin: $name
+#
+# Add your aliases, functions, environment variables,
+# completions, and setup logic here.
+
+# Example:
+# alias ll='ls -lah'
+EOF_PLUGIN
+
+  cat > "$meta_file" <<EOF_META
+plugin_name="$name"
+description="Custom DreamZSH plugin"
+version="0.1.0"
+author=""
+tags=""
+EOF_META
+
+  cat > "$readme_file" <<EOF_README
+# $name
+
+Short description of this plugin.
+
+## What it does
+
+Describe what this plugin adds.
+
+## Commands
+
+List commands, aliases, or functions provided by this plugin.
+
+## Notes
+
+Add any usage notes here.
+EOF_README
+
+  dz::success "Plugin created: $name"
+  print -r -- "Path: $dir"
+  print -r -- ""
+  print -r -- "Next steps:"
+  print -r -- "  edit $plugin_file"
+  print -r -- "  dreamzsh plugin enable $name"
+  print -r -- "  dreamzsh plugin info $name"
 }
 
 dz::plugin::enable() {
@@ -133,6 +212,7 @@ dz::plugin::enable() {
   DREAMZSH_PLUGINS=("${updated[@]}")
   dz::config::save || return 1
   dz::success "Enabled plugins: ${normalized[*]}"
+  dz::info "Run 'dreamzsh reload' to apply changes in the current shell."
 }
 
 dz::plugin::disable() {
@@ -164,6 +244,7 @@ dz::plugin::disable() {
   DREAMZSH_PLUGINS=("${updated[@]}")
   dz::config::save || return 1
   dz::success "Disabled plugins: ${normalized[*]}"
+  dz::info "Run 'dreamzsh reload' to apply changes in the current shell."
 }
 
 dz::plugin::load_one() {
@@ -176,7 +257,6 @@ dz::plugin::load_one() {
   }
 
   plugin_file="$(dz::plugin_main_file "$name")"
-
   if [[ ! -f "$plugin_file" ]]; then
     dz::warn "Plugin not found: $name"
     return 1
@@ -195,6 +275,7 @@ dz::plugin::load_one() {
 
 dz::plugin::load_all() {
   local plugin
+
   for plugin in "${DREAMZSH_PLUGINS[@]}"; do
     dz::plugin::load_one "$plugin"
   done

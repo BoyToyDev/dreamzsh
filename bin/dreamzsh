@@ -23,8 +23,8 @@ command_name="${1:-help}"
 shift || true
 
 main_commands=(plugin theme profile backup status config doctor reload help)
-plugin_subcommands=(list enable disable info help)
-theme_subcommands=(list set preview current help)
+plugin_subcommands=(list create enable disable info help)
+theme_subcommands=(list create set preview current help)
 profile_subcommands=(list info apply current help)
 backup_subcommands=(create list restore clean help)
 
@@ -32,40 +32,47 @@ case "$command_name" in
   help|-h|--help)
     dz::help::main
     ;;
-
   status)
     dz::status::run
     ;;
-
   config)
     dz::config::print
     ;;
-
   doctor)
     dz::doctor::run || exit 1
     ;;
-
   reload)
     dz::info "Run this in your shell:"
     print -r -- 'source "$HOME/.zshrc"'
     ;;
-
   plugin)
     subcommand="${1:-help}"
     shift || true
+
     case "$subcommand" in
-      help|-h|--help) dz::help::plugin ;;
-      list) dz::plugin::list ;;
+      help|-h|--help)
+        dz::help::plugin
+        ;;
+      list)
+        dz::plugin::list
+        ;;
+      create)
+        [[ -n "${1:-}" ]] || {
+          dz::usage_error "Missing plugin name." "Usage: dreamzsh plugin create <name>"
+          exit 1
+        }
+        dz::plugin::create "$1" || exit 1
+        ;;
       enable)
         (( $# > 0 )) || {
-          dz::usage_error "Missing plugin name." "Usage: dreamzsh plugin enable <name...>"
+          dz::usage_error "Missing plugin name." "Usage: dreamzsh plugin enable <name> [name...]"
           exit 1
         }
         dz::plugin::enable "$@" || exit 1
         ;;
       disable)
         (( $# > 0 )) || {
-          dz::usage_error "Missing plugin name." "Usage: dreamzsh plugin disable <name...>"
+          dz::usage_error "Missing plugin name." "Usage: dreamzsh plugin disable <name> [name...]"
           exit 1
         }
         dz::plugin::disable "$@" || exit 1
@@ -84,13 +91,24 @@ case "$command_name" in
         ;;
     esac
     ;;
-
   theme)
     subcommand="${1:-help}"
     shift || true
+
     case "$subcommand" in
-      help|-h|--help) dz::help::theme ;;
-      list) dz::theme::list ;;
+      help|-h|--help)
+        dz::help::theme
+        ;;
+      list)
+        dz::theme::list
+        ;;
+      create)
+        [[ -n "${1:-}" ]] || {
+          dz::usage_error "Missing theme name." "Usage: dreamzsh theme create <name>"
+          exit 1
+        }
+        dz::theme::create "$1" || exit 1
+        ;;
       set)
         [[ -n "${1:-}" ]] || {
           dz::usage_error "Missing theme name." "Usage: dreamzsh theme set <name>"
@@ -115,13 +133,17 @@ case "$command_name" in
         ;;
     esac
     ;;
-
   profile)
     subcommand="${1:-help}"
     shift || true
+
     case "$subcommand" in
-      help|-h|--help) dz::help::profile ;;
-      list) dz::profile::list ;;
+      help|-h|--help)
+        dz::help::profile
+        ;;
+      list)
+        dz::profile::list
+        ;;
       info)
         [[ -n "${1:-}" ]] || {
           dz::usage_error "Missing profile name." "Usage: dreamzsh profile info <name>"
@@ -146,10 +168,10 @@ case "$command_name" in
         ;;
     esac
     ;;
-
   backup)
     subcommand="${1:-help}"
     shift || true
+
     case "$subcommand" in
       help|-h|--help)
         dz::help::backup
@@ -177,7 +199,6 @@ case "$command_name" in
         ;;
     esac
     ;;
-
   *)
     dz::unknown_command "$command_name" "${main_commands[@]}"
     dz::help::main

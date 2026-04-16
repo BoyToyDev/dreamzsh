@@ -9,29 +9,31 @@ source "${DREAMZSH_DIR}/core/utils.zsh" || return 1
 
 dz::help::main() {
   cat <<'TXT'
-DreamZSH — simple Zsh framework with themes and plugins
+DreamZSH - simple Zsh framework with themes and plugins
 
 Usage:
   dreamzsh <command> [subcommand] [options]
 
 Commands:
-  plugin     Manage plugins
-  theme      Manage themes
-  profile    Manage profiles
-  status     Show current DreamZSH status
-  config     Show current configuration
-  doctor     Check installation and configuration
-  reload     Reload DreamZSH in current shell
-  help       Show help
+  plugin    Manage plugins
+  theme     Manage themes
+  profile   Manage profiles
+  status    Show current DreamZSH status
+  config    Show current configuration
+  doctor    Check installation and configuration
+  reload    Reload DreamZSH in current shell
+  help      Show help
 
 Plugin commands:
   dreamzsh plugin list
-  dreamzsh plugin enable <name...>
-  dreamzsh plugin disable <name...>
+  dreamzsh plugin create <name>
+  dreamzsh plugin enable <name> [name...]
+  dreamzsh plugin disable <name> [name...]
   dreamzsh plugin info <name>
 
 Theme commands:
   dreamzsh theme list
+  dreamzsh theme create <name>
   dreamzsh theme set <name>
   dreamzsh theme preview <name>
   dreamzsh theme current
@@ -44,9 +46,11 @@ Profile commands:
 
 Examples:
   dreamzsh status
+  dreamzsh plugin create my-plugin
   dreamzsh plugin enable git history
+  dreamzsh theme create my-theme
+  dreamzsh theme preview my-theme
   dreamzsh theme set pro
-  dreamzsh theme preview dream-powerline
   dreamzsh profile info default
   dreamzsh profile apply minimal
   dreamzsh doctor
@@ -57,8 +61,9 @@ dz::help::plugin() {
   cat <<'TXT'
 Usage:
   dreamzsh plugin list
-  dreamzsh plugin enable <name...>
-  dreamzsh plugin disable <name...>
+  dreamzsh plugin create <name>
+  dreamzsh plugin enable <name> [name...]
+  dreamzsh plugin disable <name> [name...]
   dreamzsh plugin info <name>
 TXT
 }
@@ -67,6 +72,7 @@ dz::help::theme() {
   cat <<'TXT'
 Usage:
   dreamzsh theme list
+  dreamzsh theme create <name>
   dreamzsh theme set <name>
   dreamzsh theme preview <name>
   dreamzsh theme current
@@ -82,6 +88,7 @@ Usage:
   dreamzsh profile current
 TXT
 }
+
 dz::help::backup() {
   cat <<'TXT'
 Usage:

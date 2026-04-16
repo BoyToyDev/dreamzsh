@@ -1,6 +1,3 @@
-# dreamzsh/dreamzsh.conf.example
-
-DREAMZSH_VERSION="2"
-DREAMZSH_THEME="minimal"
+DREAMZSH_THEME="dream-powerline"
 DREAMZSH_PROFILE="default"
 DREAMZSH_PLUGINS=(git history navigation)

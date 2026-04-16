@@ -1,6 +1,13 @@
+# local config
+dreamzsh.conf
+
+# backups
 backups/
-*.tar.gz
-*.bak
+
+# editor junk
 *.swp
+*.swo
 *~
-.zcompdump*
+
+# system
+.DS_Store
