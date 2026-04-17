@@ -6,14 +6,14 @@
 Instead of editing configuration files, you manage everything through a simple CLI.
 
 Supports:
-- plugins  
-- themes  
-- profiles  
-- ability to create your own plugins and themes  
+- plugins
+- themes
+- profiles
+- ability to create your own plugins and themes
 
 Includes:
-- error checking system  
-- predictable and transparent behavior  
+- error checking system
+- predictable and transparent behavior
 
 ---
 
@@ -23,18 +23,17 @@ Traditional Zsh workflow is based on editing config files.
 
 DreamZSH takes a different approach:
 
-- you don’t edit config files  
-- you control the system through commands  
+- you don’t edit config files
+- you control the system through commands
 
 ---
 
 ## ⚡ Installation
 
 ```bash
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/BoyToyDev/dreamzsh/main/install.sh)"
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/BoyToyDev/dreamzsh/master/install.sh)"
 
 After installation, you can start using it immediately.
-```
 
 ⚙️ Configuration
 
@@ -87,7 +86,7 @@ safely experiment
 
 Example:
 
-dreamzsh profile use default
+dreamzsh profile apply default
 📖 Help
 
 All documentation is available directly in CLI:
@@ -99,10 +98,6 @@ dreamzsh profile help
 CLI-driven management
 minimal manual intervention
 simplicity of use
-⚡ Performance
-minimal overhead
-fast shell startup
-no unnecessary dependencies
 🤝 Contributing
 
 Ideas, issues and pull requests are welcome.
@@ -110,4 +105,3 @@ Ideas, issues and pull requests are welcome.
 ⭐ Support
 
 If you like the project — give it a star ⭐
-

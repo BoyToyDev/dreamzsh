@@ -1,92 +1,58 @@
 #!/usr/bin/env sh
-
 set -eu
 
+REPO_URL="https://github.com/BoyToyDev/dreamzsh.git"
+REPO_BRANCH="master"
 INSTALL_DIR="${HOME}/.dreamzsh"
 ZSHRC="${HOME}/.zshrc"
 BLOCK_START="# >>> dreamzsh >>>"
 BLOCK_END="# <<< dreamzsh <<<"
 
-timestamp() {
-  date +"%Y%m%d-%H%M%S"
-}
+info() { printf '==> %s\n' "$*"; }
+success() { printf '✔ %s\n' "$*"; }
+warn() { printf 'WARN: %s\n' "$*" >&2; }
+error() { printf 'ERROR: %s\n' "$*" >&2; }
 
-info() {
-  printf '==> %s\n' "$*"
-}
-
-success() {
-  printf '✔ %s\n' "$*"
-}
-
-warn() {
-  printf 'WARN: %s\n' "$*" >&2
-}
-
-error() {
-  printf 'ERROR: %s\n' "$*" >&2
-}
-
-require_file() {
-  if [ ! -f "$1" ]; then
-    error "Required file not found: $1"
+ensure_repo() {
+  if [ -d "$INSTALL_DIR/.git" ]; then
+    info "Updating DreamZSH in $INSTALL_DIR"
+    git -C "$INSTALL_DIR" fetch origin
+    git -C "$INSTALL_DIR" checkout "$REPO_BRANCH"
+    git -C "$INSTALL_DIR" pull --ff-only origin "$REPO_BRANCH"
+  elif [ -e "$INSTALL_DIR" ]; then
+    error "Path exists but is not a git repository: $INSTALL_DIR"
     exit 1
-  fi
-}
-
-backup_file() {
-  file="$1"
-
-  if [ -f "$file" ]; then
-    backup="${file}.dreamzsh.bak.$(timestamp)"
-    cp "$file" "$backup"
-    success "Backup created: $backup"
+  else
+    info "Cloning DreamZSH into $INSTALL_DIR"
+    git clone --branch "$REPO_BRANCH" "$REPO_URL" "$INSTALL_DIR"
   fi
 }
 
 ensure_zshrc() {
-  if [ ! -f "$ZSHRC" ]; then
-    : > "$ZSHRC"
-    success "Created: $ZSHRC"
-  fi
+  [ -f "$ZSHRC" ] || : > "$ZSHRC"
 }
 
 ensure_config() {
-  config_file="${INSTALL_DIR}/dreamzsh.conf"
-  example_file="${INSTALL_DIR}/dreamzsh.conf.example"
-
-  if [ -f "$config_file" ]; then
-    info "Config already exists: $config_file"
+  if [ -f "$INSTALL_DIR/dreamzsh.conf" ]; then
     return 0
   fi
 
-  if [ -f "$example_file" ]; then
-    cp "$example_file" "$config_file"
-    success "Created config from example: $config_file"
-    return 0
+  if [ -f "$INSTALL_DIR/dreamzsh.conf.example" ]; then
+    cp "$INSTALL_DIR/dreamzsh.conf.example" "$INSTALL_DIR/dreamzsh.conf"
+    success "Created config from example"
   fi
-
-  cat > "$config_file" <<'EOCONF'
-DREAMZSH_THEME="minimal"
-DREAMZSH_PROFILE="default"
-DREAMZSH_PLUGINS=(git history navigation)
-EOCONF
-
-  success "Created default config: $config_file"
 }
 
 build_block() {
   cat <<'EOBLOCK'
 # >>> dreamzsh >>>
 export DREAMZSH_DIR="$HOME/.dreamzsh"
-
 if [ -d "$DREAMZSH_DIR/bin" ]; then
   case ":$PATH:" in
     *:"$DREAMZSH_DIR/bin":*) ;;
     *) export PATH="$DREAMZSH_DIR/bin:$PATH" ;;
   esac
 fi
-
 if [ -f "$DREAMZSH_DIR/core/init.zsh" ]; then
   source "$DREAMZSH_DIR/core/init.zsh"
 else
@@ -97,57 +63,30 @@ EOBLOCK
 }
 
 append_block() {
-  tmp_file=$(mktemp)
-
+  tmp_file="$(mktemp)"
   cp "$ZSHRC" "$tmp_file"
-
-  if [ -s "$tmp_file" ]; then
-    printf '\n' >> "$tmp_file"
-  fi
-
+  [ -s "$tmp_file" ] && printf '\n' >> "$tmp_file"
   build_block >> "$tmp_file"
   mv "$tmp_file" "$ZSHRC"
-
   success "DreamZSH block added to $ZSHRC"
 }
 
 main() {
-  if [ ! -e "$INSTALL_DIR" ]; then
-    error "DreamZSH is not installed at $INSTALL_DIR"
-    printf 'Expected installation path: %s\n' "$INSTALL_DIR" >&2
-    printf '\n' >&2
-    printf 'Recommended install flow:\n' >&2
-    printf '  git clone https://github.com/BoyToyDev/dreamzsh "%s"\n' "$INSTALL_DIR" >&2
-    printf '  cd "%s"\n' "$INSTALL_DIR" >&2
-    printf '  ./install.sh\n' >&2
-    exit 1
-  fi
+  command -v git >/dev/null 2>&1 || { error "git is required"; exit 1; }
 
-  require_file "$INSTALL_DIR/core/init.zsh"
-  require_file "$INSTALL_DIR/bin/dreamzsh"
-
+  ensure_repo
   ensure_zshrc
-  backup_file "$ZSHRC"
   ensure_config
 
   if grep -Fq "$BLOCK_START" "$ZSHRC" || grep -Fq "$BLOCK_END" "$ZSHRC"; then
-    warn "DreamZSH is already installed."
-    warn "DreamZSH block markers already exist in $ZSHRC"
-    printf '\n'
-    printf 'If needed later:\n'
-    printf '  update support can be added as a separate command\n'
-    printf '  uninstall can remove the block from %s and delete %s\n' "$ZSHRC" "$INSTALL_DIR"
-    exit 0
+    warn "DreamZSH block already exists in $ZSHRC"
+  else
+    append_block
   fi
-
-  append_block
 
   printf '\n'
   success "DreamZSH installed successfully."
-  printf '\n'
-  printf 'Start using DreamZSH now:\n'
-  printf '  source "%s"\n' "$ZSHRC"
-  printf '\n'
+  printf 'Run: source "%s"\n' "$ZSHRC"
   printf 'Or open a new terminal.\n'
 }
 
