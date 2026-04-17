@@ -1,30 +1,163 @@
 # 🚀 DreamZSH
 
-> Zsh made easy to use.
-
-**DreamZSH** is a lightweight Zsh framework focused on usability.  
-Instead of editing configuration files, you manage everything through a simple CLI.
-
-Supports:
-- plugins
-- themes
-- profiles
-- ability to create your own plugins and themes
-
-Includes:
-- error checking system
-- predictable and transparent behavior
+> **Stop editing `.zshrc`. Manage your shell like a system.**  
+> **Zsh config as managed state, not handwritten files.**
 
 ---
 
-## 🎯 Concept
+## 🤔 Why DreamZSH exists
 
-Traditional Zsh workflow is based on editing config files.
+Working with Zsh configs is painful.
 
-DreamZSH takes a different approach:
+- you edit `.zshrc` manually  
+- you read tons of docs and wikis  
+- you install plugins without really knowing what they do  
+- you break things and don’t know why  
 
-- you don’t edit config files
-- you control the system through commands
+There is no structure. No visibility. No safety.
+
+So DreamZSH was built to fix that.
+
+---
+
+## 🧠 The idea
+
+Instead of editing config files:
+
+👉 you manage your shell through a CLI
+
+You can:
+
+- enable plugins  
+- preview and switch themes  
+- inspect what is installed  
+- read descriptions before using anything  
+- validate your setup  
+- backup and restore everything  
+
+---
+
+## ⚡ Example
+
+```bash
+dreamzsh plugin list
+dreamzsh plugin enable git history
+dreamzsh plugin info git
+
+dreamzsh theme list
+dreamzsh theme preview dream-powerline
+dreamzsh theme set minimal
+
+dreamzsh profile list
+dreamzsh profile apply work
+
+dreamzsh doctor
+dreamzsh backup create --all
+```
+
+---
+
+## 💎 Core features
+
+### 🔌 Plugin management via CLI
+
+No more guessing what plugins do.
+
+```bash
+dreamzsh plugin list
+dreamzsh plugin info <name>
+dreamzsh plugin enable <name>
+```
+
+---
+
+### 🎨 Themes with preview
+
+Try before you commit.
+
+```bash
+dreamzsh theme preview <name>
+```
+
+---
+
+### 🧬 Profiles (full environments)
+
+Switch your entire setup instantly.
+
+```bash
+dreamzsh profile apply work
+```
+
+---
+
+### 🩺 Doctor (built-in diagnostics)
+
+Debug your shell in one command.
+
+```bash
+dreamzsh doctor
+```
+
+---
+
+### 💾 Backup & restore
+
+Never break your shell again.
+
+```bash
+dreamzsh backup create --all
+dreamzsh backup restore <archive>
+```
+
+---
+
+## ⚔️ Why not oh-my-zsh?
+
+| | Traditional Zsh | DreamZSH |
+|--|--|--|
+| Config | edit `.zshrc` | CLI |
+| Visibility | low | full |
+| Debugging | manual | `doctor` |
+| Safety | none | backup system |
+| Switching setups | hard | profiles |
+
+---
+
+## 🧠 Philosophy
+
+Your shell configuration should be:
+
+- predictable  
+- reproducible  
+- debuggable  
+
+DreamZSH treats your shell config as a **system**, not a text file.
+
+---
+
+## 🔮 What's coming next
+
+### 📦 Shareable profiles (packages)
+
+In the future:
+
+- you will be able to create your own profile  
+- bundle it with plugins and a theme  
+- share it with others  
+
+Example:
+
+```bash
+dreamzsh profile export my-setup
+dreamzsh profile install someone/cool-setup
+```
+
+👉 This means:
+
+- no setup time  
+- no config editing  
+- just install and use  
 
 ---
 
@@ -33,75 +166,16 @@ DreamZSH takes a different approach:
 ```bash
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/BoyToyDev/dreamzsh/master/install.sh)"
 ```
-After installation, you can start using it immediately.
 
-⚙️ Configuration
+---
 
-DreamZSH does not require manual editing of .zshrc.
 
-It uses an embedded block that:
-
-works alongside your existing configuration
-does not break your current setup
-delegates control to the CLI
-🧩 Features
-
-Currently available:
-
-profiles combining plugins and themes
-full configuration via CLI
-built-in help system
-command autocompletion
-improved navigation
-extensible architecture focused on community development
-🔌 Plugins
-
-Plugins are enabled via CLI — no manual setup required.
-
-You can enable multiple plugins at once:
-
-dreamzsh plugin enable git navigation history
-
-Each plugin is an isolated module:
-
-plugins/<name>/
-├── plugin.zsh
-└── plugin.meta
-
-plugin.meta contains plugin description, used by CLI for selection and management.
-
-🧬 Profiles
-
-Profiles represent a complete configuration set:
-
-plugins
-theme
-settings
-
-This allows you to:
-
-quickly switch environments
-maintain multiple setups
-safely experiment
-
-Example:
-
-dreamzsh profile apply default
-📖 Help
-
-All documentation is available directly in CLI:
-
-dreamzsh help
-dreamzsh plugin help
-dreamzsh profile help
-🧱 Principles
-CLI-driven management
-minimal manual intervention
-simplicity of use
-🤝 Contributing
+## 🤝 Contributing
 
 Ideas, issues and pull requests are welcome.
 
-⭐ Support
+---
+
+## ⭐ Support
 
 If you like the project — give it a star ⭐
