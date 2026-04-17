@@ -32,7 +32,7 @@ DreamZSH takes a different approach:
 
 ```bash
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/BoyToyDev/dreamzsh/master/install.sh)"
-
+```bash
 After installation, you can start using it immediately.
 
 ⚙️ Configuration
