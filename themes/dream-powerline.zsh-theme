@@ -8,27 +8,35 @@ dz_git_branch() {
 }
 
 dz_build_dream_powerline_prompt() {
-  local git_branch
-  local user_color
+  local exit_code=$?
+  local git_branch=""
+  local user_bg="2"
+  local user_fg="0"
+  local path_bg="6"
+  local path_fg="0"
+  local git_bg="8"
+  local git_fg="7"
+  local status_color="2"
 
   if [[ "$EUID" -eq 0 ]]; then
-    user_color="1"
-  else
-    user_color="2"
+    user_bg="1"
+  fi
+
+  if (( exit_code != 0 )); then
+    status_color="1"
   fi
 
   git_branch="$(dz_git_branch)"
 
-  PROMPT="%K{${user_color}}%F{0} %n@%m %f%k"
-  PROMPT+="%K{6}%F{0} %~ %f%k"
+  PROMPT="%K{${user_bg}}%F{${user_fg}} %n@%m %f%k"
+  PROMPT+="%K{${path_bg}}%F{${path_fg}} %~ %f%k"
 
   if [[ -n "$git_branch" ]]; then
-    PROMPT+="%K{8}%F{7} ${git_branch} %f%k"
+    PROMPT+="%K{${git_bg}}%F{${git_fg}}  ${git_branch} %f%k"
   fi
 
   PROMPT+="
-%F{5}>%f "
-
+%F{${status_color}}❯%f "
   RPROMPT=''
 }
 

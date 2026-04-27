@@ -107,10 +107,12 @@ dz::theme::reset_runtime() {
   if typeset -f add-zsh-hook >/dev/null 2>&1; then
     add-zsh-hook -d precmd build_prompt 2>/dev/null || true
     add-zsh-hook -d precmd dz_build_dream_smart_prompt 2>/dev/null || true
+    add-zsh-hook -d precmd dz_build_dream_powerline_prompt 2>/dev/null || true
   fi
 
   unfunction build_prompt 2>/dev/null || true
   unfunction dz_build_dream_smart_prompt 2>/dev/null || true
+  unfunction dz_build_dream_powerline_prompt 2>/dev/null || true
   unfunction dz_git_prompt_info 2>/dev/null || true
   unfunction dz_git_branch 2>/dev/null || true
   unfunction dz_segment 2>/dev/null || true
