@@ -1,2 +1,0 @@
-DREAMZSH_THEME="minimal"
-DREAMZSH_PLUGINS=(navigation)
