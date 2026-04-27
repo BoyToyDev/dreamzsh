@@ -1,7 +1,19 @@
 # 🚀 DreamZSH
 
+![GitHub stars](https://img.shields.io/github/stars/BoyToyDev/dreamzsh?style=flat)
+![GitHub last commit](https://img.shields.io/github/last-commit/BoyToyDev/dreamzsh)
+![License](https://img.shields.io/github/license/BoyToyDev/dreamzsh)
+
 > **Stop editing `.zshrc`. Manage your shell like a system.**  
 > **Zsh config as managed state, not handwritten files.**
+
+---
+
+## ⚡ Installation
+
+```bash
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/BoyToyDev/dreamzsh/master/install.sh)"
+```
 
 ---
 
@@ -16,7 +28,7 @@ Working with Zsh configs is painful.
 
 There is no structure. No visibility. No safety.
 
-So DreamZSH was built to fix that.
+DreamZSH fixes that.
 
 ---
 
@@ -26,93 +38,99 @@ Instead of editing config files:
 
 👉 you manage your shell through a CLI
 
-You can:
-
-- enable plugins  
-- preview and switch themes  
-- inspect what is installed  
-- read descriptions before using anything  
-- validate your setup  
-- backup and restore everything  
-
 ---
 
-## ⚡ Example
+## ⚡ What can you actually do?
+
+You can control your entire shell setup from the terminal.
+
+### 🔌 Plugins
+
+View all available plugins:
 
 ```bash
 dreamzsh plugin list
-dreamzsh plugin enable git history
+```
+
+Get detailed info about any plugin:
+
+```bash
 dreamzsh plugin info git
+```
 
-dreamzsh theme list
+Enable multiple plugins at once:
+
+```bash
+dreamzsh plugin enable git history
+```
+
+Disable plugins just as easily:
+
+```bash
+dreamzsh plugin disable git history
+```
+
+---
+
+### 🎨 Themes
+
+Preview themes before applying:
+
+```bash
 dreamzsh theme preview dream-powerline
-dreamzsh theme set minimal
+```
 
-dreamzsh profile list
-dreamzsh profile apply work
+Set your theme:
 
+```bash
+dreamzsh theme set dream-powerline
+```
+
+---
+
+### 🧬 Profiles
+
+Apply a full environment instantly:
+
+```bash
+dreamzsh profile apply default
+```
+
+---
+
+### 🩺 Diagnostics
+
+Check your setup:
+
+```bash
 dreamzsh doctor
+```
+
+---
+
+### 💾 Backup
+
+Create a snapshot:
+
+```bash
 dreamzsh backup create --all
 ```
 
 ---
 
-## 💎 Core features
-
-### 🔌 Plugin management via CLI
-
-No more guessing what plugins do.
+## ⚡ Try it in 30 seconds
 
 ```bash
+dreamzsh profile apply default
 dreamzsh plugin list
-dreamzsh plugin info <name>
-dreamzsh plugin enable <name>
-```
-
----
-
-### 🎨 Themes with preview
-
-Try before you commit.
-
-```bash
-dreamzsh theme preview <name>
-```
-
----
-
-### 🧬 Profiles (full environments)
-
-Switch your entire setup instantly.
-
-```bash
-dreamzsh profile apply work
-```
-
----
-
-### 🩺 Doctor (built-in diagnostics)
-
-Debug your shell in one command.
-
-```bash
+dreamzsh plugin info git
+dreamzsh theme preview dream-powerline
 dreamzsh doctor
 ```
 
 ---
 
-### 💾 Backup & restore
-
-Never break your shell again.
-
-```bash
-dreamzsh backup create --all
-dreamzsh backup restore <archive>
-```
-
----
-
-## ⚔️ Why not oh-my-zsh?
+## ⚔️ Why not traditional Zsh setup?
 
 | | Traditional Zsh | DreamZSH |
 |--|--|--|
@@ -136,43 +154,18 @@ DreamZSH treats your shell config as a **system**, not a text file.
 
 ---
 
-## 🔮 What's coming next
+## 🔮 What's next
 
 ### 📦 Shareable profiles (packages)
 
-In the future:
-
-- you will be able to create your own profile  
-- bundle it with plugins and a theme  
-- share it with others  
-
-Example:
+Soon you will be able to:
 
 ```bash
 dreamzsh profile export my-setup
 dreamzsh profile install someone/cool-setup
 ```
 
-👉 This means:
-
-- no setup time  
-- no config editing  
-- just install and use  
-
----
-
-## ⚡ Installation
-
-```bash
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/BoyToyDev/dreamzsh/master/install.sh)"
-```
-
----
-
-
-## 🤝 Contributing
-
-Ideas, issues and pull requests are welcome.
+👉 No setup. Just install and use.
 
 ---
 
