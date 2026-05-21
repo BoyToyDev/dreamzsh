@@ -30,7 +30,7 @@ EOF
   [[ "$confirm" == [Yy] ]] || {
     dz::warn "Uninstall cancelled."
     return 0
-  fi
+  }
 
   if [[ ! -f "$zshrc" ]]; then
     dz::warn "$zshrc not found. Nothing to remove."
