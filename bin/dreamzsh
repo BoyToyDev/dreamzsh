@@ -16,21 +16,29 @@ source "${DREAMZSH_DIR}/core/profiles.zsh" || exit 1
 source "${DREAMZSH_DIR}/core/status.zsh" || exit 1
 source "${DREAMZSH_DIR}/core/backup.zsh" || exit 1
 source "${DREAMZSH_DIR}/core/doctor.zsh" || exit 1
+source "${DREAMZSH_DIR}/core/update.zsh" || exit 1
+source "${DREAMZSH_DIR}/core/uninstall.zsh" || exit 1
+source "${DREAMZSH_DIR}/core/stats.zsh" || exit 1
 
 dz::config::load || exit 1
+
+DREAMZSH_VERSION="0.2.0"
 
 command_name="${1:-help}"
 shift || true
 
-main_commands=(plugin theme profile backup status config doctor reload help)
+main_commands=(plugin theme profile backup status config doctor reload update uninstall stats help version)
 plugin_subcommands=(list create enable disable info help)
 theme_subcommands=(list create set preview current help)
-profile_subcommands=(list info apply current help)
+profile_subcommands=(list info apply current export import help)
 backup_subcommands=(create list restore clean help)
 
 case "$command_name" in
   help|-h|--help)
     dz::help::main
+    ;;
+  version|-v|--version)
+    print -r -- "DreamZSH $DREAMZSH_VERSION"
     ;;
   status)
     dz::status::run
@@ -39,11 +47,37 @@ case "$command_name" in
     dz::config::print
     ;;
   doctor)
-    dz::doctor::run || exit 1
+    if [[ "${1:-}" == "--fix" ]]; then
+      shift
+      dz::doctor::fix || exit 1
+    else
+      dz::doctor::run || exit 1
+    fi
     ;;
   reload)
-    dz::info "Run this in your shell:"
-    print -r -- 'source "$HOME/.zshrc"'
+    if [[ "${1:-}" == "--exec" ]]; then
+      shift
+      exec zsh -l
+    fi
+    dz::info "To reload DreamZSH, run:"
+    print -r -- '  exec zsh'
+    print -r -- ''
+    print -r -- 'Or use: dreamzsh reload --exec'
+    print -r -- '(note: --exec replaces the dreamzsh process, not your shell)'
+    ;;
+  update)
+    dz::update::run || exit 1
+    ;;
+  uninstall)
+    if [[ "${1:-}" == "--purge" ]]; then
+      shift
+      dz::uninstall::purge || exit 1
+    else
+      dz::uninstall::run || exit 1
+    fi
+    ;;
+  stats)
+    dz::stats::run
     ;;
   plugin)
     subcommand="${1:-help}"
@@ -160,6 +194,20 @@ case "$command_name" in
         ;;
       current)
         dz::profile::current
+        ;;
+      export)
+        [[ -n "${1:-}" ]] || {
+          dz::usage_error "Missing profile name." "Usage: dreamzsh profile export <name> [output.tar.gz]"
+          exit 1
+        }
+        dz::profile::export "$1" "${2:-}" || exit 1
+        ;;
+      import)
+        [[ -n "${1:-}" ]] || {
+          dz::usage_error "Missing archive path." "Usage: dreamzsh profile import <archive.tar.gz> [--apply]"
+          exit 1
+        }
+        dz::profile::import "$1" "${2:-}" || exit 1
         ;;
       *)
         dz::unknown_command "$subcommand" "${profile_subcommands[@]}"

@@ -1,0 +1,5 @@
+plugin_name="FZF integration"
+description="Fuzzy finder integration: file search, git branches, process killer, history search."
+version="1.0.0"
+author="DreamZSH"
+tags="fzf fuzzy finder productivity search"

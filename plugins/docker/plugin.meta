@@ -1,0 +1,5 @@
+plugin_name="Docker tools"
+description="Docker and Docker Compose aliases, helpers, and shortcuts."
+version="1.0.0"
+author="DreamZSH"
+tags="docker compose containers devops aliases"

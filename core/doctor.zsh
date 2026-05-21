@@ -73,7 +73,21 @@ dz::doctor::run() {
   fi
 
   if command -v zsh >/dev/null 2>&1; then
-    dz::success "zsh found: $(command -v zsh)"
+    local zsh_path zsh_ver zsh_major zsh_minor
+    zsh_path="$(command -v zsh)"
+    zsh_ver="$("$zsh_path" --version 2>/dev/null | head -1)"
+    if [[ "$zsh_ver" =~ 'zsh ([0-9]+)\.([0-9]+)' ]]; then
+      zsh_major="$match[1]"
+      zsh_minor="$match[2]"
+      if (( zsh_major > 5 || (zsh_major == 5 && zsh_minor >= 0) )); then
+        dz::success "zsh $zsh_major.$zsh_minor found: $zsh_path"
+      else
+        dz::error "zsh $zsh_major.$zsh_minor is too old (need 5.0+): $zsh_path"
+        ok=0
+      fi
+    else
+      dz::success "zsh found: $zsh_path"
+    fi
   else
     dz::error "zsh binary not found in PATH"
     ok=0
@@ -85,5 +99,128 @@ dz::doctor::run() {
   else
     dz::error "Doctor finished: critical problems found"
     return 1
+  fi
+}
+
+dz::doctor::fix() {
+  local fixed=0
+  local zshrc_file="${HOME}/.zshrc"
+  local block_start="# >>> dreamzsh >>>"
+  local block_end="# <<< dreamzsh <<<"
+
+  dz::info "Doctor --fix: repairing..."
+
+  if [[ ! -d "$DREAMZSH_DIR" ]]; then
+    mkdir -p "$DREAMZSH_DIR" && {
+      dz::success "Created: $DREAMZSH_DIR"
+      (( fixed++ ))
+    }
+  fi
+
+  if [[ ! -d "$DREAMZSH_THEMES_DIR" ]]; then
+    mkdir -p "$DREAMZSH_THEMES_DIR" && {
+      dz::success "Created: $DREAMZSH_THEMES_DIR"
+      (( fixed++ ))
+    }
+  fi
+
+  if [[ ! -d "$DREAMZSH_PLUGINS_DIR" ]]; then
+    mkdir -p "$DREAMZSH_PLUGINS_DIR" && {
+      dz::success "Created: $DREAMZSH_PLUGINS_DIR"
+      (( fixed++ ))
+    }
+  fi
+
+  if [[ ! -d "$DREAMZSH_PROFILES_DIR" ]]; then
+    mkdir -p "$DREAMZSH_PROFILES_DIR" && {
+      dz::success "Created: $DREAMZSH_PROFILES_DIR"
+      (( fixed++ ))
+    }
+  fi
+
+  if [[ ! -f "$DREAMZSH_CONFIG_FILE" && -f "${DREAMZSH_DIR}/dreamzsh.conf.example" ]]; then
+    cp "${DREAMZSH_DIR}/dreamzsh.conf.example" "$DREAMZSH_CONFIG_FILE" && {
+      dz::success "Config created from example"
+      (( fixed++ ))
+    }
+  fi
+
+  if [[ -f "$zshrc_file" ]]; then
+    local start_count end_count
+    start_count=$(grep -cF "$block_start" "$zshrc_file" 2>/dev/null || true)
+    end_count=$(grep -cF "$block_end" "$zshrc_file" 2>/dev/null || true)
+
+    if (( start_count > 1 || end_count > 1 || start_count != end_count )); then
+      local tmp_file
+      tmp_file="$(mktemp)" || return 1
+
+      local in_block=0
+      while IFS= read -r line; do
+        if [[ "$line" == "$block_start" ]]; then
+          (( in_block > 0 )) && continue
+          in_block=1
+          continue
+        fi
+        if [[ "$line" == "$block_end" ]]; then
+          in_block=0
+          continue
+        fi
+        (( in_block )) && continue
+        print -r -- "$line" >> "$tmp_file"
+      done < "$zshrc_file"
+
+      print -r -- "" >> "$tmp_file"
+      print -r -- "$block_start" >> "$tmp_file"
+      cat <<'EOBLOCK' >> "$tmp_file"
+export DREAMZSH_DIR="$HOME/.dreamzsh"
+if [ -d "$DREAMZSH_DIR/bin" ]; then
+  case ":$PATH:" in
+    *:"$DREAMZSH_DIR/bin":*) ;;
+    *) export PATH="$DREAMZSH_DIR/bin:$PATH" ;;
+  esac
+fi
+if [ -f "$DREAMZSH_DIR/core/init.zsh" ]; then
+  source "$DREAMZSH_DIR/core/init.zsh"
+fi
+EOBLOCK
+      print -r -- "$block_end" >> "$tmp_file"
+
+      mv "$tmp_file" "$zshrc_file" && {
+        dz::success "Fixed broken DreamZSH block in .zshrc"
+        (( fixed++ ))
+      }
+    fi
+  fi
+
+  local -a missing_plugins=()
+  local p
+  for p in "${DREAMZSH_PLUGINS[@]}"; do
+    dz::plugin_exists "$p" || missing_plugins+=("$p")
+  done
+
+  if (( ${#missing_plugins[@]} > 0 )); then
+    local -a cleaned=()
+    for p in "${DREAMZSH_PLUGINS[@]}"; do
+      dz::plugin_exists "$p" && cleaned+=("$p")
+    done
+    DREAMZSH_PLUGINS=("${cleaned[@]}")
+    dz::config::save && {
+      dz::success "Removed missing plugins from config: ${missing_plugins[*]}"
+      (( fixed++ ))
+    }
+  fi
+
+  if ! dz::theme_exists "$DREAMZSH_THEME"; then
+    DREAMZSH_THEME="minimal"
+    dz::config::save && {
+      dz::success "Reset theme to 'minimal' (previous was missing)"
+      (( fixed++ ))
+    }
+  fi
+
+  if (( fixed > 0 )); then
+    dz::success "Doctor --fix: $fixed issue(s) repaired."
+  else
+    dz::success "Doctor --fix: nothing to fix."
   fi
 }

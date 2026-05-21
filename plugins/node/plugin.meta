@@ -1,0 +1,5 @@
+plugin_name="Node.js tools"
+description="Aliases for npm, yarn, pnpm, bun, and nvm. Speeds up JS/TS development."
+version="1.0.0"
+author="DreamZSH"
+tags="node npm yarn pnpm bun javascript typescript"

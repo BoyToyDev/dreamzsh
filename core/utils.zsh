@@ -58,7 +58,7 @@ dz::error() {
 
 dz::die() {
   dz::error "$*"
-  return 1
+  exit 1
 }
 
 dz::usage_error() {

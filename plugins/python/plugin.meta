@@ -1,0 +1,5 @@
+plugin_name="Python tools"
+description="Python venv, poetry, conda, and uv aliases. Cleanup, serve, and format helpers."
+version="1.0.0"
+author="DreamZSH"
+tags="python venv poetry conda uv pip development"

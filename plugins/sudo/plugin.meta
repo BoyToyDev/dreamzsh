@@ -1,0 +1,5 @@
+plugin_name="Sudo"
+description="Press ESC twice to prepend sudo to the current or previous command."
+version="1.0.0"
+author="DreamZSH"
+tags="sudo shortcut keybinding productivity"

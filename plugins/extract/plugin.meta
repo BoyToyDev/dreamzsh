@@ -1,0 +1,5 @@
+plugin_name="Extract"
+description="Smart archive extraction — one command for tar.gz, zip, 7z, rar and more."
+version="1.0.0"
+author="DreamZSH"
+tags="archive extract tar zip unzip utility"

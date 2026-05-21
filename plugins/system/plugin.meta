@@ -1,0 +1,5 @@
+plugin_name="System tools"
+description="System info, disk usage, network, process management, and modern tool aliases."
+version="1.0.0"
+author="DreamZSH"
+tags="system disk network process utility productivity"

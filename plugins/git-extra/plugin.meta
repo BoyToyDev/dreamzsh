@@ -1,0 +1,6 @@
+plugin_name="Git Extra"
+description="Advanced Git helpers: WIP commits, rebase, bisect, churn analysis, and more."
+version="1.0.0"
+author="DreamZSH"
+tags="git advanced rebase bisect productivity"
+requires="git"

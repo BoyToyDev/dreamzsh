@@ -7,6 +7,7 @@ __DREAMZSH_PLUGINS_LOADED=1
 
 source "${DREAMZSH_DIR}/core/utils.zsh" || return 1
 source "${DREAMZSH_DIR}/core/config.zsh" || return 1
+source "${DREAMZSH_DIR}/core/hooks.zsh" || return 1
 
 dz::plugin::list() {
   local dir name plugin_state meta_file description
@@ -171,17 +172,35 @@ EOF_README
   print -r -- "  dreamzsh plugin info $name"
 }
 
+dz::plugin::all_available() {
+  local dir
+  [[ -d "$DREAMZSH_PLUGINS_DIR" ]] || return 0
+  for dir in "$DREAMZSH_PLUGINS_DIR"/*(N/); do
+    [[ -f "$dir/plugin.zsh" ]] || continue
+    print -r -- "${dir:t}"
+  done
+}
+
 dz::plugin::enable() {
   local -a normalized updated invalid missing
   local name
 
-  normalized=($(dz::normalize_name_args "$@"))
-  normalized=($(dz::unique_array "${normalized[@]}"))
+  if [[ "${1:-}" == "--all" ]]; then
+    shift
+    normalized=($(dz::plugin::all_available))
+    (( ${#normalized[@]} > 0 )) || {
+      dz::error "No plugins found to enable"
+      return 1
+    }
+  else
+    normalized=($(dz::normalize_name_args "$@"))
+    normalized=($(dz::unique_array "${normalized[@]}"))
 
-  (( ${#normalized[@]} > 0 )) || {
-    dz::error "At least one plugin name is required"
-    return 1
-  }
+    (( ${#normalized[@]} > 0 )) || {
+      dz::error "At least one plugin name is required"
+      return 1
+    }
+  fi
 
   updated=("${DREAMZSH_PLUGINS[@]}")
 
@@ -209,6 +228,16 @@ dz::plugin::enable() {
     return 1
   fi
 
+  local dep
+  for name in "${normalized[@]}"; do
+    local -a unmet
+    unmet=($(dz::plugin::check_deps "$name"))
+    if (( ${#unmet[@]} > 0 )); then
+      dz::error "Plugin '$name' requires: ${unmet[*]}"
+      return 1
+    fi
+  done
+
   DREAMZSH_PLUGINS=("${updated[@]}")
   dz::config::save || return 1
   dz::success "Enabled plugins: ${normalized[*]}"
@@ -218,6 +247,15 @@ dz::plugin::enable() {
 dz::plugin::disable() {
   local -a normalized updated
   local name existing
+
+  if [[ "${1:-}" == "--all" ]]; then
+    shift
+    DREAMZSH_PLUGINS=()
+    dz::config::save || return 1
+    dz::success "All plugins disabled."
+    dz::info "Run 'dreamzsh reload' to apply changes in the current shell."
+    return 0
+  fi
 
   normalized=($(dz::normalize_name_args "$@"))
   normalized=($(dz::unique_array "${normalized[@]}"))
@@ -247,9 +285,61 @@ dz::plugin::disable() {
   dz::info "Run 'dreamzsh reload' to apply changes in the current shell."
 }
 
+dz::plugin::get_requires() {
+  local name="$1"
+  local meta_file requires=""
+  local -a result=()
+
+  meta_file="$(dz::plugin_meta_file "$name")"
+  if [[ -f "$meta_file" ]]; then
+    unset requires 2>/dev/null || true
+    source "$meta_file" 2>/dev/null
+    requires="${requires:-}"
+  fi
+
+  [[ -z "$requires" ]] && return 0
+
+  local piece
+  for piece in ${(s:,:)requires}; do
+    piece="${piece## }"
+    piece="${piece%% }"
+    [[ -z "$piece" ]] && continue
+    result+=("$piece")
+  done
+
+  print -r -- "${result[@]}"
+}
+
+dz::plugin::check_deps() {
+  local name="$1"
+  local -a required missing
+  local dep
+
+  required=($(dz::plugin::get_requires "$name"))
+  (( ${#required[@]} == 0 )) && return 0
+
+  for dep in "${required[@]}"; do
+    dz::plugin_exists "$dep" || {
+      missing+=("$dep")
+      continue
+    }
+    dz::array_contains "$dep" "${DREAMZSH_PLUGINS[@]}" || {
+      missing+=("$dep")
+    }
+  done
+
+  if (( ${#missing[@]} > 0 )); then
+    print -r -- "${missing[@]}"
+    return 1
+  fi
+
+  return 0
+}
+
 dz::plugin::load_one() {
   local name="$1"
   local plugin_file completion_dir
+  local -a missing
 
   dz::is_valid_name "$name" || {
     dz::warn "Skipping invalid plugin name: $name"
@@ -262,21 +352,46 @@ dz::plugin::load_one() {
     return 1
   fi
 
+  missing=($(dz::plugin::check_deps "$name"))
+  if (( ${#missing[@]} > 0 )); then
+    dz::warn "Skipping '$name': missing dependencies — ${missing[*]}"
+    return 1
+  fi
+
   completion_dir="$(dz::plugin_dir "$name")/completions"
   if [[ -d "$completion_dir" ]]; then
     fpath=("$completion_dir" $fpath)
   fi
 
+  dz::hook::fire PRE_PLUGIN
+
   source "$plugin_file" || {
     dz::warn "Failed to load plugin: $name"
     return 1
   }
+
+  dz::hook::fire POST_PLUGIN
 }
 
 dz::plugin::load_all() {
   local plugin
+  local -a remaining failed
+  local max_passes=3 pass
 
-  for plugin in "${DREAMZSH_PLUGINS[@]}"; do
-    dz::plugin::load_one "$plugin"
+  remaining=("${DREAMZSH_PLUGINS[@]}")
+
+  for (( pass=1; pass<=max_passes; pass++ )); do
+    [[ ${#remaining[@]} -gt 0 ]] || break
+
+    failed=()
+    for plugin in "${remaining[@]}"; do
+      dz::plugin::load_one "$plugin" || failed+=("$plugin")
+    done
+
+    if [[ ${#failed[@]} -eq ${#remaining[@]} ]]; then
+      break
+    fi
+
+    remaining=("${failed[@]}")
   done
 }
