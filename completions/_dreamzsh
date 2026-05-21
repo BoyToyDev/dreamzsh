@@ -96,7 +96,7 @@ case "${words[2]:-}" in
       return
     fi
     case "${words[3]:-}" in
-      info|apply)
+      info|apply|export)
         _describe 'profile' profiles
         return
         ;;
