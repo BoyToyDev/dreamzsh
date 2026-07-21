@@ -70,9 +70,19 @@ dz::backup::create() {
   for item in "${components[@]}"; do
     case "$item" in
       config) [[ -f "$DREAMZSH_CONFIG_FILE" ]] && tar_items+=("dreamzsh.conf") ;;
-      profiles) [[ -d "$DREAMZSH_PROFILES_DIR" ]] && tar_items+=("profiles") ;;
-      plugins) [[ -d "$DREAMZSH_PLUGINS_DIR" ]] && tar_items+=("plugins") ;;
-      themes) [[ -d "$DREAMZSH_THEMES_DIR" ]] && tar_items+=("themes") ;;
+      profiles)
+        [[ -d "$DREAMZSH_PROFILES_DIR" ]] && tar_items+=("profiles")
+        [[ -d "$DREAMZSH_CUSTOM_PROFILES_DIR" ]] && tar_items+=("custom/profiles")
+        ;;
+      plugins)
+        [[ -d "$DREAMZSH_PLUGINS_DIR" ]] && tar_items+=("plugins")
+        [[ -d "$DREAMZSH_CUSTOM_PLUGINS_DIR" ]] && tar_items+=("custom/plugins")
+        [[ -f "$DREAMZSH_PLUGIN_REPOS_FILE" ]] && tar_items+=("custom/plugin-repos.conf")
+        ;;
+      themes)
+        [[ -d "$DREAMZSH_THEMES_DIR" ]] && tar_items+=("themes")
+        [[ -d "$DREAMZSH_CUSTOM_THEMES_DIR" ]] && tar_items+=("custom/themes")
+        ;;
     esac
   done
 

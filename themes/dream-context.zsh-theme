@@ -76,3 +76,13 @@ dz::theme::apply() {
   add-zsh-hook precmd _dz_ctx_build
   _dz_ctx_build
 }
+
+dz::theme::cleanup() {
+  add-zsh-hook -d precmd _dz_ctx_build 2>/dev/null || true
+  unfunction _dz_ctx_build 2>/dev/null || true
+  unfunction _dz_ctx_git_segment 2>/dev/null || true
+  unfunction _dz_ctx_docker 2>/dev/null || true
+  unfunction _dz_ctx_node 2>/dev/null || true
+  unfunction _dz_ctx_python 2>/dev/null || true
+  unfunction _dz_ctx_git_branch 2>/dev/null || true
+}

@@ -3,4 +3,4 @@ description="Advanced Git helpers: WIP commits, rebase, bisect, churn analysis, 
 version="1.0.0"
 author="DreamZSH"
 tags="git advanced rebase bisect productivity"
-requires="git"
+requires_commands="git"

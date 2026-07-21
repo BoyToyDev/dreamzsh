@@ -1,6 +1,6 @@
 #compdef dreamzsh dz
 
-local -a commands plugin_subcommands theme_subcommands profile_subcommands backup_subcommands plugins themes profiles backups
+local -a commands plugin_subcommands plugin_repo_subcommands theme_subcommands profile_subcommands backup_subcommands plugins external_plugins registry_plugins all_plugins plugin_repositories themes profiles backups
 
 commands=(
   'plugin:Manage plugins'
@@ -20,11 +20,23 @@ commands=(
 
 plugin_subcommands=(
   'list:List plugins'
+  'browse:Browse plugins in configured repositories'
+  'repo:Manage plugin repositories'
   'enable:Enable one or more plugins'
   'disable:Disable one or more plugins'
   'create:Create a new plugin'
+  'install:Install an external plugin'
+  'update:Update external plugins'
+  'remove:Remove an external plugin'
   'info:Show plugin information'
   'help:Show plugin help'
+)
+
+plugin_repo_subcommands=(
+  'list:List configured plugin repositories'
+  'add:Add or fetch a plugin repository'
+  'remove:Remove a custom plugin repository'
+  'update:Update repository caches'
 )
 
 theme_subcommands=(
@@ -55,6 +67,10 @@ backup_subcommands=(
 )
 
 plugins=(${(f)"$(${DREAMZSH_DIR:-$HOME/.dreamzsh}/bin/dreamzsh plugin list 2>/dev/null | awk 'NR>2 {print $1}')"})
+external_plugins=("${DREAMZSH_CUSTOM_PLUGINS_DIR:-${DREAMZSH_DIR:-$HOME/.dreamzsh}/custom/plugins}"/*/source.meta(N:h:t))
+registry_plugins=("${DREAMZSH_PLUGIN_REPOS_DIR:-${DREAMZSH_DIR:-$HOME/.dreamzsh}/custom/plugin-repos}"/*/plugins/*/plugin.zsh(N:h:t))
+all_plugins=("${plugins[@]}" "${registry_plugins[@]}")
+plugin_repositories=(official "${DREAMZSH_PLUGIN_REPOS_DIR:-${DREAMZSH_DIR:-$HOME/.dreamzsh}/custom/plugin-repos}"/*(N:t))
 themes=(${(f)"$(${DREAMZSH_DIR:-$HOME/.dreamzsh}/bin/dreamzsh theme list 2>/dev/null)"})
 profiles=(${(f)"$(${DREAMZSH_DIR:-$HOME/.dreamzsh}/bin/dreamzsh profile list 2>/dev/null | awk 'NR>2 {print $1}')"})
 backups=(${(f)"$(ls ${DREAMZSH_DIR:-$HOME/.dreamzsh}/backups/*.tar.gz(N:t) 2>/dev/null)"})
@@ -72,8 +88,73 @@ case "${words[2]:-}" in
       return
     fi
     case "${words[3]:-}" in
-      enable|disable|info)
+      enable|disable)
         _describe 'plugin' plugins
+        return
+        ;;
+      info)
+        if [[ "${words[CURRENT-1]:-}" == "--repo" ]]; then
+          _describe 'plugin repository' plugin_repositories
+        elif (( CURRENT == 4 )); then
+          _describe 'plugin' all_plugins
+        else
+          _values 'plugin info option' --repo
+        fi
+        return
+        ;;
+      browse)
+        if [[ "${words[CURRENT-1]:-}" == "--repo" ]]; then
+          _describe 'plugin repository' plugin_repositories
+        else
+          _values 'plugin browse option' --repo --refresh
+        fi
+        return
+        ;;
+      repo)
+        if (( CURRENT == 4 )); then
+          _describe 'plugin repository command' plugin_repo_subcommands
+        else
+          case "${words[4]:-}" in
+            remove) _describe 'plugin repository' plugin_repositories ;;
+            update)
+              local -a update_repositories
+              update_repositories=(--all "${plugin_repositories[@]}")
+              _describe 'plugin repository' update_repositories
+              ;;
+            add)
+              [[ "${words[CURRENT-1]:-}" == "--ref" ]] && _message 'branch, tag, or commit' \
+                || _values 'plugin repository option' --ref
+              ;;
+          esac
+        fi
+        return
+        ;;
+      update)
+        local -a update_plugins
+        update_plugins=(--all "${external_plugins[@]}")
+        _describe 'external plugin' update_plugins
+        return
+        ;;
+      remove)
+        if (( CURRENT > 4 )); then
+          _values 'plugin remove option' --yes
+        else
+          _describe 'external plugin' external_plugins
+        fi
+        return
+        ;;
+      install)
+        if (( CURRENT == 4 )); then
+          _describe 'registry plugin' registry_plugins
+        elif [[ "${words[CURRENT-1]:-}" == "--entry" ]]; then
+          _files
+        elif [[ "${words[CURRENT-1]:-}" == "--repo" ]]; then
+          _describe 'plugin repository' plugin_repositories
+        elif [[ "${words[CURRENT-1]:-}" == "--name" || "${words[CURRENT-1]:-}" == "--ref" ]]; then
+          _message 'value'
+        else
+          _values 'plugin install option' --repo --name --ref --entry --enable
+        fi
         return
         ;;
     esac
@@ -97,7 +178,29 @@ case "${words[2]:-}" in
     fi
     case "${words[3]:-}" in
       info|apply|export)
-        _describe 'profile' profiles
+        if [[ "${words[3]:-}" == "export" ]]; then
+          if [[ "${words[CURRENT-1]:-}" == "--from" ]]; then
+            _describe 'profile' profiles
+          elif [[ "${words[CURRENT-1]:-}" == "--include-theme" ]]; then
+            _describe 'theme' themes
+          elif [[ "${words[CURRENT-1]:-}" == "--output" ]]; then
+            _files
+          elif (( CURRENT == 4 )); then
+            _message 'new profile name'
+          else
+            _values 'profile export option' --output --from --include-theme
+          fi
+        else
+          _describe 'profile' profiles
+        fi
+        return
+        ;;
+      import)
+        if (( CURRENT == 4 )); then
+          _files -g '*.tar.gz'
+        else
+          _values 'profile import option' --apply --overwrite --yes
+        fi
         return
         ;;
     esac
@@ -113,6 +216,10 @@ case "${words[2]:-}" in
         return
         ;;
     esac
+    ;;
+  reload)
+    _values 'reload option' --exec
+    return
     ;;
 esac
 

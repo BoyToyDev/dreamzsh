@@ -79,6 +79,7 @@ dz::status::run() {
   dz::status::print_kv "plugins" "$DREAMZSH_PLUGINS_DIR"
   dz::status::print_kv "themes" "$DREAMZSH_THEMES_DIR"
   dz::status::print_kv "profiles" "$DREAMZSH_PROFILES_DIR"
+  dz::status::print_kv "custom" "$DREAMZSH_CUSTOM_DIR"
 
   dz::status::print_section "Backups"
   dz::status::print_kv "total" "$backup_total"

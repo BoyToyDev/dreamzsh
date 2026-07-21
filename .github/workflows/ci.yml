@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Install test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck util-linux zsh
+
+      - name: Check installer syntax
+        run: |
+          sh -n install.sh
+          shellcheck install.sh tests/install.sh
+
+      - name: Check Zsh syntax
+        shell: bash
+        run: |
+          zsh -n bin/dreamzsh
+          zsh -n completions/_dreamzsh
+          zsh -n dreamzsh.conf.example
+          zsh -n profiles/*.profile
+          find core plugins themes -type f \
+            \( -name '*.zsh' -o -name '*.zsh-theme' \) -print0 \
+            | xargs -0 -n1 zsh -n
+
+      - name: Run CLI smoke tests
+        run: zsh tests/smoke.zsh
+
+      - name: Run lifecycle and dependency tests
+        run: zsh tests/lifecycle.zsh
+
+      - name: Run plugin registry tests
+        run: zsh tests/registry.zsh
+
+      - name: Run installer smoke tests
+        run: sh tests/install.sh

@@ -33,3 +33,9 @@ dz::theme::apply() {
   add-zsh-hook precmd _dz_mini_prompt
   _dz_mini_prompt
 }
+
+dz::theme::cleanup() {
+  add-zsh-hook -d precmd _dz_mini_prompt 2>/dev/null || true
+  unfunction _dz_mini_prompt 2>/dev/null || true
+  unfunction _dz_mini_git 2>/dev/null || true
+}

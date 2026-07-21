@@ -4,6 +4,9 @@ dreamzsh.conf
 # backups
 backups/
 
+# user-managed plugins, themes, and profiles
+custom/
+
 # editor junk
 *.swp
 *.swo

@@ -11,6 +11,12 @@ __DREAMZSH_UTILS_LOADED=1
 : "${DREAMZSH_THEMES_DIR:=$DREAMZSH_DIR/themes}"
 : "${DREAMZSH_PLUGINS_DIR:=$DREAMZSH_DIR/plugins}"
 : "${DREAMZSH_PROFILES_DIR:=$DREAMZSH_DIR/profiles}"
+: "${DREAMZSH_CUSTOM_DIR:=$DREAMZSH_DIR/custom}"
+: "${DREAMZSH_CUSTOM_PLUGINS_DIR:=$DREAMZSH_CUSTOM_DIR/plugins}"
+: "${DREAMZSH_CUSTOM_THEMES_DIR:=$DREAMZSH_CUSTOM_DIR/themes}"
+: "${DREAMZSH_CUSTOM_PROFILES_DIR:=$DREAMZSH_CUSTOM_DIR/profiles}"
+: "${DREAMZSH_PLUGIN_REPOS_DIR:=$DREAMZSH_CUSTOM_DIR/plugin-repos}"
+: "${DREAMZSH_PLUGIN_REPOS_FILE:=$DREAMZSH_CUSTOM_DIR/plugin-repos.conf}"
 
 if [[ -t 1 ]]; then
   : "${DZ_COLOR_RESET:=%f%b%k}"
@@ -59,6 +65,25 @@ dz::error() {
 dz::die() {
   dz::error "$*"
   exit 1
+}
+
+# A standalone CLI process cannot replace or source its parent shell. This
+# wrapper is loaded into interactive Zsh by core/init.zsh, so reload can replace
+# the actual current shell while every other invocation is delegated to the CLI.
+dreamzsh() {
+  if [[ "${1:-}" == "reload" ]]; then
+    case "${2:-}" in
+      ""|--exec)
+        exec "${DREAMZSH_ZSH_BIN:-zsh}"
+        ;;
+      -h|--help)
+        command "${DREAMZSH_ZSH_BIN:-zsh}" "$DREAMZSH_DIR/bin/dreamzsh" help reload
+        return $?
+        ;;
+    esac
+  fi
+
+  command "${DREAMZSH_ZSH_BIN:-zsh}" "$DREAMZSH_DIR/bin/dreamzsh" "$@"
 }
 
 dz::usage_error() {
@@ -170,22 +195,54 @@ dz::unique_array() {
 
 dz::plugin_dir() {
   local name="$1"
-  print -r -- "$DREAMZSH_PLUGINS_DIR/$name"
+  if [[ -f "$DREAMZSH_CUSTOM_PLUGINS_DIR/$name/plugin.zsh" ]]; then
+    print -r -- "$DREAMZSH_CUSTOM_PLUGINS_DIR/$name"
+  else
+    print -r -- "$DREAMZSH_PLUGINS_DIR/$name"
+  fi
+}
+
+dz::plugin_origin() {
+  local name="$1"
+  if [[ -f "$DREAMZSH_CUSTOM_PLUGINS_DIR/$name/source.meta" ]]; then
+    print -r -- "external"
+  elif [[ -f "$DREAMZSH_CUSTOM_PLUGINS_DIR/$name/plugin.zsh" ]]; then
+    print -r -- "custom"
+  elif [[ -f "$DREAMZSH_PLUGINS_DIR/$name/plugin.zsh" ]]; then
+    print -r -- "builtin"
+  else
+    print -r -- "missing"
+  fi
 }
 
 dz::plugin_main_file() {
   local name="$1"
-  print -r -- "$DREAMZSH_PLUGINS_DIR/$name/plugin.zsh"
+  print -r -- "$(dz::plugin_dir "$name")/plugin.zsh"
 }
 
 dz::plugin_meta_file() {
   local name="$1"
-  print -r -- "$DREAMZSH_PLUGINS_DIR/$name/plugin.meta"
+  print -r -- "$(dz::plugin_dir "$name")/plugin.meta"
 }
 
 dz::theme_file() {
   local name="$1"
-  print -r -- "$DREAMZSH_THEMES_DIR/$name.zsh-theme"
+  if [[ -f "$DREAMZSH_CUSTOM_THEMES_DIR/$name.zsh-theme" ]]; then
+    print -r -- "$DREAMZSH_CUSTOM_THEMES_DIR/$name.zsh-theme"
+  else
+    print -r -- "$DREAMZSH_THEMES_DIR/$name.zsh-theme"
+  fi
+}
+
+dz::theme_origin() {
+  local name="$1"
+  if [[ -f "$DREAMZSH_CUSTOM_THEMES_DIR/$name.zsh-theme" ]]; then
+    print -r -- "custom"
+  elif [[ -f "$DREAMZSH_THEMES_DIR/$name.zsh-theme" ]]; then
+    print -r -- "builtin"
+  else
+    print -r -- "missing"
+  fi
 }
 
 dz::plugin_exists() {

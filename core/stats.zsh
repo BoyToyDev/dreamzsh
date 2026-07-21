@@ -17,8 +17,8 @@ dz::stats::run() {
   zsh_ver="$ZSH_VERSION"
   dz_ver="${DREAMZSH_VERSION:-0.2.0}"
 
-  theme_count=$(find "$DREAMZSH_THEMES_DIR" -maxdepth 1 -name '*.zsh-theme' 2>/dev/null | wc -l | tr -d ' ')
-  profile_count=$(find "$DREAMZSH_PROFILES_DIR" -maxdepth 1 -name '*.profile' 2>/dev/null | wc -l | tr -d ' ')
+  theme_count=$(( $(find "$DREAMZSH_THEMES_DIR" -maxdepth 1 -name '*.zsh-theme' 2>/dev/null | wc -l) + $(find "$DREAMZSH_CUSTOM_THEMES_DIR" -maxdepth 1 -name '*.zsh-theme' 2>/dev/null | wc -l) ))
+  profile_count=$(( $(find "$DREAMZSH_PROFILES_DIR" -maxdepth 1 -name '*.profile' 2>/dev/null | wc -l) + $(find "$DREAMZSH_CUSTOM_PROFILES_DIR" -maxdepth 1 -name '*.profile' 2>/dev/null | wc -l) ))
   backup_count=$(find "${DREAMZSH_BACKUPS_DIR:-$DREAMZSH_DIR/backups}" -maxdepth 1 -name '*.tar.gz' 2>/dev/null | wc -l | tr -d ' ')
 
   if (( $+commands[du] )); then

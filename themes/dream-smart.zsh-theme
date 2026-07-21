@@ -48,3 +48,10 @@ dz::theme::apply() {
   add-zsh-hook precmd dz_build_dream_smart_prompt
   dz_build_dream_smart_prompt
 }
+
+dz::theme::cleanup() {
+  add-zsh-hook -d precmd dz_build_dream_smart_prompt 2>/dev/null || true
+  unfunction dz_build_dream_smart_prompt 2>/dev/null || true
+  unfunction dz_prompt_git_branch 2>/dev/null || true
+  unfunction dz_prompt_user_color 2>/dev/null || true
+}

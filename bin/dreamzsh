@@ -28,14 +28,14 @@ command_name="${1:-help}"
 shift || true
 
 main_commands=(plugin theme profile backup status config doctor reload update uninstall stats help version)
-plugin_subcommands=(list create enable disable info help)
+plugin_subcommands=(list browse repo create install update remove enable disable info help)
 theme_subcommands=(list create set preview current help)
 profile_subcommands=(list info apply current export import help)
 backup_subcommands=(create list restore clean help)
 
 case "$command_name" in
   help|-h|--help)
-    dz::help::main
+    dz::help::command "${1:-}" "${2:-}" || exit 1
     ;;
   version|-v|--version)
     print -r -- "DreamZSH $DREAMZSH_VERSION"
@@ -55,15 +55,17 @@ case "$command_name" in
     fi
     ;;
   reload)
+    if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+      dz::help::command reload
+      exit 0
+    fi
     if [[ "${1:-}" == "--exec" ]]; then
       shift
-      exec zsh -l
+      exec zsh
     fi
-    dz::info "To reload DreamZSH, run:"
-    print -r -- '  exec zsh'
-    print -r -- ''
-    print -r -- 'Or use: dreamzsh reload --exec'
-    print -r -- '(note: --exec replaces the dreamzsh process, not your shell)'
+    dz::warn "The standalone CLI cannot replace its parent shell."
+    dz::info "Run 'dreamzsh reload' from a shell initialized by DreamZSH."
+    dz::info "Fallback: exec zsh"
     ;;
   update)
     dz::update::run || exit 1
@@ -83,6 +85,11 @@ case "$command_name" in
     subcommand="${1:-help}"
     shift || true
 
+    if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+      dz::help::command plugin "$subcommand" || exit 1
+      exit 0
+    fi
+
     case "$subcommand" in
       help|-h|--help)
         dz::help::plugin
@@ -90,12 +97,66 @@ case "$command_name" in
       list)
         dz::plugin::list
         ;;
+      browse)
+        dz::registry::browse "$@" || exit 1
+        ;;
+      repo)
+        repo_command="${1:-list}"
+        shift || true
+        if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+          dz::help::command plugin repo
+          exit 0
+        fi
+        case "$repo_command" in
+          list|help|-h|--help)
+            dz::registry::repo_list
+            ;;
+          add)
+            dz::registry::repo_add "$@" || exit 1
+            ;;
+          remove)
+            [[ -n "${1:-}" ]] || {
+              dz::usage_error "Missing plugin repository name." "Usage: dreamzsh plugin repo remove <name>"
+              exit 1
+            }
+            dz::registry::repo_remove "$1" || exit 1
+            ;;
+          update)
+            dz::registry::repo_update "${1:---all}" || exit 1
+            ;;
+          *)
+            dz::unknown_command "$repo_command" list add remove update
+            exit 1
+            ;;
+        esac
+        ;;
       create)
         [[ -n "${1:-}" ]] || {
           dz::usage_error "Missing plugin name." "Usage: dreamzsh plugin create <name>"
           exit 1
         }
         dz::plugin::create "$1" || exit 1
+        ;;
+      install)
+        [[ -n "${1:-}" ]] || {
+          dz::usage_error "Missing plugin source." "Usage: dreamzsh plugin install <owner/repo|https-url> [options]"
+          exit 1
+        }
+        dz::plugin::install "$@" || exit 1
+        ;;
+      update)
+        (( $# > 0 )) || {
+          dz::usage_error "Missing plugin name." "Usage: dreamzsh plugin update <name> [name...] | --all"
+          exit 1
+        }
+        dz::plugin::update_external "$@" || exit 1
+        ;;
+      remove)
+        [[ -n "${1:-}" ]] || {
+          dz::usage_error "Missing plugin name." "Usage: dreamzsh plugin remove <name> [--yes]"
+          exit 1
+        }
+        dz::plugin::remove_external "$@" || exit 1
         ;;
       enable)
         (( $# > 0 )) || {
@@ -116,7 +177,7 @@ case "$command_name" in
           dz::usage_error "Missing plugin name." "Usage: dreamzsh plugin info <name>"
           exit 1
         }
-        dz::plugin::info "$1" || exit 1
+        dz::plugin::info "$@" || exit 1
         ;;
       *)
         dz::unknown_command "$subcommand" "${plugin_subcommands[@]}"
@@ -128,6 +189,11 @@ case "$command_name" in
   theme)
     subcommand="${1:-help}"
     shift || true
+
+    if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+      dz::help::command theme "$subcommand" || exit 1
+      exit 0
+    fi
 
     case "$subcommand" in
       help|-h|--help)
@@ -171,6 +237,11 @@ case "$command_name" in
     subcommand="${1:-help}"
     shift || true
 
+    if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+      dz::help::command profile "$subcommand" || exit 1
+      exit 0
+    fi
+
     case "$subcommand" in
       help|-h|--help)
         dz::help::profile
@@ -197,17 +268,17 @@ case "$command_name" in
         ;;
       export)
         [[ -n "${1:-}" ]] || {
-          dz::usage_error "Missing profile name." "Usage: dreamzsh profile export <name> [output.tar.gz]"
+          dz::usage_error "Missing export profile name." "Usage: dreamzsh profile export <new-name> [options]"
           exit 1
         }
-        dz::profile::export "$1" "${2:-}" || exit 1
+        dz::profile::export "$@" || exit 1
         ;;
       import)
         [[ -n "${1:-}" ]] || {
           dz::usage_error "Missing archive path." "Usage: dreamzsh profile import <archive.tar.gz> [--apply]"
           exit 1
         }
-        dz::profile::import "$1" "${2:-}" || exit 1
+        dz::profile::import "$@" || exit 1
         ;;
       *)
         dz::unknown_command "$subcommand" "${profile_subcommands[@]}"
@@ -219,6 +290,11 @@ case "$command_name" in
   backup)
     subcommand="${1:-help}"
     shift || true
+
+    if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+      dz::help::command backup "$subcommand" || exit 1
+      exit 0
+    fi
 
     case "$subcommand" in
       help|-h|--help)

@@ -10,12 +10,13 @@ source "${DREAMZSH_DIR}/core/config.zsh" || return 1
 
 dz::theme::list() {
   local file name
+  local -A seen=()
 
-  [[ -d "$DREAMZSH_THEMES_DIR" ]] || return 0
-
-  for file in "$DREAMZSH_THEMES_DIR"/*.zsh-theme(N); do
+  for file in "$DREAMZSH_CUSTOM_THEMES_DIR"/*.zsh-theme(N) "$DREAMZSH_THEMES_DIR"/*.zsh-theme(N); do
     name="${file:t}"
     name="${name%.zsh-theme}"
+    [[ -n "${seen[$name]:-}" ]] && continue
+    seen[$name]=1
     print -r -- "$name"
   done
 }
@@ -38,15 +39,15 @@ dz::theme::create() {
     return 1
   }
 
-  theme_file="$(dz::theme_file "$name")"
+  theme_file="$DREAMZSH_CUSTOM_THEMES_DIR/$name.zsh-theme"
 
-  if [[ -e "$theme_file" ]]; then
+  if dz::theme_exists "$name" || [[ -e "$theme_file" ]]; then
     dz::error "Theme already exists: $name"
     return 1
   fi
 
-  mkdir -p "$DREAMZSH_THEMES_DIR" || {
-    dz::error "Failed to create themes directory: $DREAMZSH_THEMES_DIR"
+  mkdir -p "$DREAMZSH_CUSTOM_THEMES_DIR" || {
+    dz::error "Failed to create themes directory: $DREAMZSH_CUSTOM_THEMES_DIR"
     return 1
   }
 
@@ -104,6 +105,10 @@ EOF_THEME
 dz::theme::reset_runtime() {
   RPROMPT=''
 
+  if typeset -f dz::theme::cleanup >/dev/null 2>&1; then
+    dz::theme::cleanup || dz::warn "Theme cleanup reported an error"
+  fi
+
   if typeset -f add-zsh-hook >/dev/null 2>&1; then
     add-zsh-hook -d precmd build_prompt 2>/dev/null || true
     add-zsh-hook -d precmd dz_build_dream_smart_prompt 2>/dev/null || true
@@ -118,6 +123,7 @@ dz::theme::reset_runtime() {
   unfunction dz_segment 2>/dev/null || true
   unfunction dz_prompt_user_color 2>/dev/null || true
   unfunction dz_prompt_git_branch 2>/dev/null || true
+  unfunction dz::theme::cleanup 2>/dev/null || true
   unfunction dz::theme::apply 2>/dev/null || true
 }
 
