@@ -4,6 +4,10 @@ HISTFILE="${HISTFILE:-$HOME/.zsh_history}"
 HISTSIZE="${HISTSIZE:-10000}"
 SAVEHIST="${SAVEHIST:-10000}"
 
+if [[ -r "$HISTFILE" ]]; then
+  fc -RI "$HISTFILE" 2>/dev/null || true
+fi
+
 setopt APPEND_HISTORY
 setopt INC_APPEND_HISTORY
 setopt SHARE_HISTORY

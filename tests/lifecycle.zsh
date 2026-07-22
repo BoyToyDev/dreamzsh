@@ -130,6 +130,17 @@ fi
   || fail "plugin with missing requirements sourced its body"
 pass "separate plugin and command requirements"
 
+history_flush_file="$TEST_ROOT/history-flush"
+(
+  HISTFILE="$TEST_ROOT/history"
+  fc() { print -r -- "$*" > "$history_flush_file"; }
+  DREAMZSH_ZSH_BIN="${commands[true]:-/usr/bin/true}"
+  dreamzsh reload
+)
+[[ "$(cat "$history_flush_file" 2>/dev/null)" == "-AI $TEST_ROOT/history" ]] \
+  || fail "reload did not flush command history before exec"
+pass "history flush before reload"
+
 real_zsh="${commands[zsh]:-/usr/bin/zsh}"
 mkdir -p "$TEST_ROOT/zdot"
 cat > "$TEST_ROOT/zdot/.zshenv" <<EOF

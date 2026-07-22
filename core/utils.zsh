@@ -74,10 +74,24 @@ dreamzsh() {
   if [[ "${1:-}" == "reload" ]]; then
     case "${2:-}" in
       ""|--exec)
+        if [[ -n "${HISTFILE:-}" ]]; then
+          fc -AI "$HISTFILE" 2>/dev/null || true
+        fi
         exec "${DREAMZSH_ZSH_BIN:-zsh}"
         ;;
       -h|--help)
         command "${DREAMZSH_ZSH_BIN:-zsh}" "$DREAMZSH_DIR/bin/dreamzsh" help reload
+        return $?
+        ;;
+    esac
+  fi
+
+  if [[ "${1:-}" == "theme" && "${2:-}" == "preview" ]]; then
+    case "${3:-}" in
+      -h|--help)
+        ;;
+      *)
+        dz::theme::preview "${3:-}"
         return $?
         ;;
     esac

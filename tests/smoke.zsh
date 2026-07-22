@@ -117,6 +117,14 @@ if (( ${+precmd_functions} )) && (( ${precmd_functions[(I)_dz_ctx_build]} > 0 ))
 fi
 pass "theme hook cleanup"
 
+dreamzsh theme preview dream-context >/dev/null
+(( ${precmd_functions[(I)_dz_ctx_build]} > 0 )) \
+  || fail "theme preview wrapper did not affect the current shell"
+[[ "$PROMPT" == *'❯'* ]] || fail "theme preview did not update the current prompt"
+grep -Fq 'DREAMZSH_THEME="dream-powerline"' "$install_dir/dreamzsh.conf" \
+  || fail "theme preview changed the saved theme"
+pass "current-shell theme preview"
+
 plugin_source="$test_root/test-plugin"
 mkdir -p "$plugin_source"
 git -C "$plugin_source" init -q -b main

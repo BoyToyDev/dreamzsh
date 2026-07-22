@@ -25,6 +25,10 @@ available in `CHANGELOG.ru.md`. New changes should first be recorded under
   themes after it was lost during an earlier core refactor.
 - Fixed `stats` printing raw Zsh prompt escapes and reporting an unavailable
   startup time as `?s`; startup duration is now measured and shown in ms.
+- Fixed `theme preview` running in a child process instead of changing the
+  current interactive prompt.
+- Preserve recent command history across `dreamzsh reload` by flushing it
+  before `exec zsh` and importing persisted entries when the history plugin loads.
 
 ### 2026-07-21
 
