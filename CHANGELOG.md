@@ -18,6 +18,7 @@ available in `CHANGELOG.ru.md`. New changes should first be recorded under
   and `install`; `plugin repo add` is reserved for additional repositories.
 - Reworked the English README and added a synchronized Russian `README.ru.md`
   with a language switch and a reproducible VHS demo script.
+- Added the recorded terminal demo to both README versions.
 
 #### Fixed
 
