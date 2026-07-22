@@ -7,6 +7,9 @@ backups/
 # user-managed plugins, themes, and profiles
 custom/
 
+# legacy update marker (new installations keep it under custom/cache)
+.update-check
+
 # editor junk
 *.swp
 *.swo

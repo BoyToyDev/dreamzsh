@@ -10,29 +10,30 @@ available in `CHANGELOG.ru.md`. New changes should first be recorded under
 
 ### 2026-07-22
 
+#### Added
+
+- Added synchronized English and Russian README versions with a language switch
+  and a recorded terminal demonstration.
+- Added `--yes` automation support and `ZDOTDIR` awareness to
+  `dreamzsh uninstall`.
+- Added focused update and uninstall tests to Linux CI.
+
 #### Changed
 
 - `plugin install` now enables newly installed plugins immediately; the
   redundant `--enable` option was removed from the CLI.
 - The official plugin catalog is now fetched automatically by `browse`, `info`,
   and `install`; `plugin repo add` is reserved for additional repositories.
-- Reworked the English README and added a synchronized Russian `README.ru.md`
-  with a language switch and a reproducible VHS demo script.
-- Added the recorded terminal demo to both README versions.
-
-#### Fixed
-
-- Restored TAB completion initialization for `dreamzsh`, plugins, and
-  themes after it was lost during an earlier core refactor.
-- Fixed `stats` printing raw Zsh prompt escapes and reporting an unavailable
-  startup time as `?s`; startup duration is now measured and shown in ms.
-- Fixed `theme preview` running in a child process instead of changing the
-  current interactive prompt.
-- Preserve recent command history across `dreamzsh reload` by flushing it
-  before `exec zsh` and importing persisted entries when the history plugin loads.
-- Changed the default `dreamzsh reload` to source `.zshrc` in the current shell,
-  preserving in-memory state; a full process replacement remains available as
-  `dreamzsh reload --exec`.
+- `dreamzsh update` now follows the configured upstream branch instead of
+  assuming `origin/master`, refuses tracked local changes or diverged history,
+  and keeps its daily check marker outside the Git worktree.
+- `dreamzsh reload` now sources `.zshrc` in the current shell to preserve
+  runtime state; `--exec` remains available for a full process replacement.
+- Theme previews now apply to the current interactive shell without changing
+  the saved theme.
+- Startup statistics now report measured loading time in milliseconds.
+- Uninstall operations now update `.zshrc` atomically and validate the managed
+  integration block before making changes.
 
 ### 2026-07-21
 

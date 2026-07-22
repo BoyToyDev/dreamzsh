@@ -61,6 +61,12 @@ assert_contains "$output" "Usage: dreamzsh plugin enable" "subcommand --help"
 output="$(run_cli help profile import)"
 assert_contains "$output" "Usage: dreamzsh profile import" "help topic routing"
 
+output="$(run_cli update --help)"
+assert_contains "$output" "Usage: dreamzsh update" "update help"
+
+output="$(run_cli uninstall --help)"
+assert_contains "$output" "Usage: dreamzsh uninstall" "uninstall help"
+
 output="$(run_cli plugin list)"
 assert_contains "$output" "PLUGIN" "plugin list"
 

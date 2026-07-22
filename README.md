@@ -16,8 +16,6 @@ Plugins, themes, and portable profiles without manually editing shell config.
 
 [Quick start](#-quick-start) · [Plugins](#-plugins) · [Profiles](#-portable-profiles) · [Commands](#-command-map)
 
-<img src="docs/assets/dreamzsh-demo.gif" alt="DreamZSH terminal demonstration" width="900">
-
 </div>
 
 ## Why DreamZSH?
@@ -35,8 +33,7 @@ Plugins, themes, and portable profiles without manually editing shell config.
 ## 🚀 Quick start
 
 ```zsh
-git clone https://github.com/BoyToyDev/dreamzsh.git ~/.dreamzsh
-zsh ~/.dreamzsh/install.sh
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/BoyToyDev/dreamzsh/master/install.sh)"
 ```
 
 The interactive installer checks for Zsh, can install it through a supported
@@ -55,6 +52,10 @@ dreamzsh <TAB><TAB>
 dreamzsh plugin <TAB><TAB>
 dreamzsh theme preview <TAB><TAB>
 ```
+
+<p align="center">
+  <img src="docs/assets/dreamzsh-demo.gif" alt="DreamZSH terminal demonstration" width="900">
+</p>
 
 ## 🧩 Plugins
 
@@ -138,6 +139,7 @@ Imports validate paths and SHA-256 checksums before changing local state.
 | Reload the current shell | `dreamzsh reload` |
 | Show startup statistics | `dreamzsh stats` |
 | Update DreamZSH | `dreamzsh update` |
+| Remove shell integration | `dreamzsh uninstall` |
 
 Every command has focused help:
 
@@ -169,7 +171,8 @@ commands through `requires_plugins` and `requires_commands`.
 ## 🧪 Reliability
 
 DreamZSH uses isolated CLI smoke tests, lifecycle and dependency tests, registry
-tests with local Git fixtures, installer tests, Zsh syntax checks, and Linux CI.
+tests with local Git fixtures, update and uninstall tests, installer tests, Zsh
+syntax checks, and Linux CI.
 Configuration writes, repository refreshes, plugin updates, and profile imports
 are designed to avoid partial state.
 
@@ -186,7 +189,7 @@ vhs docs/demo.tape
 - Grow the official plugin catalog.
 - Improve dependency diagnostics and profile portability.
 - Add more themes and extension documentation.
-- Add self-update controls and optional lazy loading when the design is ready.
+- Explore optional lazy loading when the metadata design is ready.
 
 See [CHANGELOG.md](CHANGELOG.md) for development history. Contributions and
 focused issue reports are welcome.

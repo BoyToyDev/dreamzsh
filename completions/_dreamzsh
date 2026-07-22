@@ -221,6 +221,10 @@ case "${words[2]:-}" in
     _values 'reload option' --exec
     return
     ;;
+  uninstall)
+    _values 'uninstall option' '--purge[delete DreamZSH files and user data]' '--yes[skip confirmation]'
+    return
+    ;;
 esac
 
 _describe 'command' commands

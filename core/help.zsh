@@ -47,6 +47,10 @@ Plugin commands:
   dreamzsh plugin disable --all
   dreamzsh plugin info <name>
 
+Maintenance:
+  dreamzsh update
+  dreamzsh uninstall [--purge] [--yes]
+
 Theme commands:
   dreamzsh theme list
   dreamzsh theme create <name>
@@ -139,6 +143,27 @@ Options:
 EOF
 }
 
+dz::help::update() {
+  cat <<'EOF'
+Usage: dreamzsh update
+
+Fast-forward the current Git checkout from its configured upstream branch.
+Tracked local changes and diverged histories are never overwritten.
+EOF
+}
+
+dz::help::uninstall() {
+  cat <<'EOF'
+Usage: dreamzsh uninstall [--purge] [--yes]
+
+Remove the DreamZSH block from ${ZDOTDIR:-$HOME}/.zshrc.
+
+Options:
+  --purge  Also permanently delete all DreamZSH files and user data.
+  --yes    Skip the interactive confirmation.
+EOF
+}
+
 dz::help::command() {
   local group="${1:-}"
   local command="${2:-}"
@@ -155,6 +180,8 @@ dz::help::command() {
       profile) dz::help::profile ;;
       backup)  dz::help::backup ;;
       reload)  dz::help::reload ;;
+      update)  dz::help::update ;;
+      uninstall) dz::help::uninstall ;;
       *)
         dz::error "Unknown help topic: $group"
         return 1
@@ -175,7 +202,7 @@ dz::help::command() {
     plugin:repo)
       print -r -- "Usage: dreamzsh plugin repo <list|add|remove|update> [arguments]"
       print -r -- "Manage plugin repositories. The official repository is built in."
-      print -r -- "Running 'dreamzsh plugin repo add' with no URL fetches the official repository."
+      print -r -- "Additional repositories require an owner/repo shorthand or HTTPS URL."
       ;;
     plugin:create)
       print -r -- "Usage: dreamzsh plugin create <name>"
@@ -186,7 +213,7 @@ dz::help::command() {
       print -r -- "       dreamzsh plugin install <owner/repo|https-url> [--name <name>]"
       print -r -- "       [--ref <branch|tag|commit>] [--entry <path>]"
       print -r -- "Installs and enables the plugin immediately."
-      print -r -- "Clone and validate an external Zsh plugin without enabling it by default."
+      print -r -- "Registry plugins and direct Git sources are validated before activation."
       ;;
     plugin:update)
       print -r -- "Usage: dreamzsh plugin update <name> [name...]"

@@ -44,5 +44,8 @@ jobs:
       - name: Run plugin registry tests
         run: zsh tests/registry.zsh
 
+      - name: Run update and uninstall tests
+        run: zsh tests/maintenance.zsh
+
       - name: Run installer smoke tests
         run: sh tests/install.sh

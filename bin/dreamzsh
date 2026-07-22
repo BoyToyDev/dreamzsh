@@ -68,15 +68,39 @@ case "$command_name" in
     dz::info "Fallback: exec zsh"
     ;;
   update)
+    if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+      dz::help::command update
+      exit 0
+    fi
+    (( $# == 0 )) || { dz::usage_error "Unknown update option: $1" "Usage: dreamzsh update"; exit 1; }
     dz::update::run || exit 1
     ;;
   uninstall)
-    if [[ "${1:-}" == "--purge" ]]; then
+    uninstall_purge=0
+    uninstall_yes=0
+    while (( $# > 0 )); do
+      case "$1" in
+        -h|--help) dz::help::command uninstall; exit 0 ;;
+        --purge) uninstall_purge=1 ;;
+        --yes) uninstall_yes=1 ;;
+        *) dz::usage_error "Unknown uninstall option: $1" "Usage: dreamzsh uninstall [--purge] [--yes]"; exit 1 ;;
+      esac
       shift
-      dz::uninstall::purge || exit 1
+    done
+    if (( uninstall_purge )); then
+      if (( uninstall_yes )); then
+        dz::uninstall::purge --yes
+      else
+        dz::uninstall::purge
+      fi
     else
-      dz::uninstall::run || exit 1
+      if (( uninstall_yes )); then
+        dz::uninstall::run --yes
+      else
+        dz::uninstall::run
+      fi
     fi
+    (( $? == 0 )) || exit 1
     ;;
   stats)
     dz::stats::run
