@@ -36,7 +36,7 @@ Plugin commands:
   dreamzsh plugin repo remove <name>
   dreamzsh plugin repo update [<name>|--all]
   dreamzsh plugin create <name>
-  dreamzsh plugin install <name> [--repo <name>] [--enable]
+  dreamzsh plugin install <name> [--repo <name>]
   dreamzsh plugin install <owner/repo|https-url> [options]
   dreamzsh plugin update <name> [name...]
   dreamzsh plugin update --all
@@ -182,9 +182,10 @@ dz::help::command() {
       print -r -- "Create a local plugin scaffold."
       ;;
     plugin:install)
-      print -r -- "Usage: dreamzsh plugin install <registry-name> [--repo <name>] [--enable]"
+      print -r -- "Usage: dreamzsh plugin install <registry-name> [--repo <name>]"
       print -r -- "       dreamzsh plugin install <owner/repo|https-url> [--name <name>]"
-      print -r -- "       [--ref <branch|tag|commit>] [--entry <path>] [--enable]"
+      print -r -- "       [--ref <branch|tag|commit>] [--entry <path>]"
+      print -r -- "Installs and enables the plugin immediately."
       print -r -- "Clone and validate an external Zsh plugin without enabling it by default."
       ;;
     plugin:update)

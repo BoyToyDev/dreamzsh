@@ -393,7 +393,7 @@ EOF
 
 dz::plugin::install() {
   local source="${1:-}"
-  local source_url name ref="" entrypoint="" enable_after=0
+  local source_url name ref="" entrypoint=""
   local tmp_dir destination
 
   [[ -n "$source" ]] || {
@@ -426,10 +426,6 @@ dz::plugin::install() {
         (( $# >= 2 )) || { dz::error "--entry requires a value"; return 1; }
         entrypoint="$2"
         shift 2
-        ;;
-      --enable)
-        enable_after=1
-        shift
         ;;
       *)
         dz::error "Unknown plugin install option: $1"
@@ -473,11 +469,11 @@ dz::plugin::install() {
   dz::info "Commit: $(dz::plugin::source_value "$name" commit)"
   dz::info "Entrypoint: $(dz::plugin::source_value "$name" entrypoint)"
 
-  if (( enable_after )); then
-    dz::plugin::enable "$name" || return 1
-  else
-    dz::info "Enable it with: dreamzsh plugin enable $name"
-  fi
+  dz::plugin::enable "$name" || {
+    rm -rf -- "$destination"
+    dz::error "Plugin installation rolled back because it could not be enabled: $name"
+    return 1
+  }
 }
 
 dz::plugin::update_one() {

@@ -42,7 +42,7 @@ run_cli() {
 
 mkdir -p "$install_dir"
 cp -R "$repo_root/bin" "$repo_root/core" "$repo_root/plugins" \
-  "$repo_root/themes" "$repo_root/profiles" "$install_dir/"
+  "$repo_root/themes" "$repo_root/profiles" "$repo_root/completions" "$install_dir/"
 cp "$repo_root/dreamzsh.conf.example" "$install_dir/dreamzsh.conf"
 chmod +x "$install_dir/bin/dreamzsh"
 
@@ -63,6 +63,24 @@ assert_contains "$output" "Usage: dreamzsh profile import" "help topic routing"
 
 output="$(run_cli plugin list)"
 assert_contains "$output" "PLUGIN" "plugin list"
+
+source "$install_dir/core/completions.zsh"
+dz::completion::init
+[[ "${_comps[dreamzsh]:-}" == _dreamzsh ]] \
+  || fail "dreamzsh completion was not registered"
+pass "completion registration"
+
+export __DREAMZSH_STARTUP_SECONDS="0.042"
+export DZ_COLOR_RESET='%f%b%k'
+export DZ_COLOR_GREEN='%F{2}'
+export DZ_COLOR_MAGENTA='%F{5}'
+export DZ_COLOR_CYAN='%F{6}'
+export DZ_COLOR_BOLD='%B'
+output="$(run_cli stats)"
+assert_contains "$output" "42 ms" "startup statistics"
+[[ "$output" != *'%F{'* && "$output" != *'%B'* && "$output" != *'%f'* ]] \
+  || fail "stats exposed raw Zsh prompt escapes"
+pass "stats color rendering"
 
 run_cli plugin disable history >/dev/null
 run_cli plugin enable history >/dev/null
@@ -118,7 +136,7 @@ fi
 git config --global --add url."$plugin_source_url".insteadOf \
   'https://example.invalid/test-plugin.git'
 
-run_cli plugin install https://example.invalid/test-plugin.git --enable >/dev/null
+run_cli plugin install https://example.invalid/test-plugin.git >/dev/null
 [[ -f "$install_dir/custom/plugins/test-plugin/source.meta" ]] \
   || fail "external plugin metadata was not created"
 grep -Fq 'test-plugin' "$install_dir/dreamzsh.conf" \

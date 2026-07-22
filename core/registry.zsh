@@ -370,12 +370,11 @@ EOF
 }
 
 dz::registry::install() {
-  local name="$1" wanted_repo="" enable_after=0 record id url ref rel dir destination tmp
+  local name="$1" wanted_repo="" record id url ref rel dir destination tmp
   shift
   while (( $# > 0 )); do
     case "$1" in
       --repo) (( $# >= 2 )) || { dz::error "--repo requires a value"; return 1; }; wanted_repo="$2"; shift 2 ;;
-      --enable) enable_after=1; shift ;;
       *) dz::error "Unknown registry plugin install option: $1"; return 1 ;;
     esac
   done
@@ -396,11 +395,11 @@ dz::registry::install() {
   }
   mv -- "$tmp" "$destination" || { rm -rf -- "$tmp"; return 1; }
   dz::success "Plugin installed from $id: $name"
-  if (( enable_after )); then
-    dz::plugin::enable "$name" || return 1
-  else
-    dz::info "Enable it with: dreamzsh plugin enable $name"
-  fi
+  dz::plugin::enable "$name" || {
+    rm -rf -- "$destination"
+    dz::error "Plugin installation rolled back because it could not be enabled: $name"
+    return 1
+  }
 }
 
 dz::registry::update_installed() {

@@ -153,7 +153,7 @@ case "${words[2]:-}" in
         elif [[ "${words[CURRENT-1]:-}" == "--name" || "${words[CURRENT-1]:-}" == "--ref" ]]; then
           _message 'value'
         else
-          _values 'plugin install option' --repo --name --ref --entry --enable
+          _values 'plugin install option' --repo --name --ref --entry
         fi
         return
         ;;

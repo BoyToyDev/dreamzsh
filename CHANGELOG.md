@@ -8,6 +8,20 @@ available in `CHANGELOG.ru.md`. New changes should first be recorded under
 
 ## Unreleased
 
+### 2026-07-22
+
+#### Changed
+
+- `plugin install` now enables newly installed plugins immediately; the
+  redundant `--enable` option was removed from the CLI.
+
+#### Fixed
+
+- Restored TAB completion initialization for `dreamzsh`, plugins, and
+  themes after it was lost during an earlier core refactor.
+- Fixed `stats` printing raw Zsh prompt escapes and reporting an unavailable
+  startup time as `?s`; startup duration is now measured and shown in ms.
+
 ### 2026-07-21
 
 #### Added
@@ -56,7 +70,7 @@ available in `CHANGELOG.ru.md`. New changes should first be recorded under
   directories for user-managed resources.
 - Added external plugin installation from `owner/repo` shorthand or HTTPS Git
   URLs with automatic entrypoint detection and optional `--name`, `--ref`,
-  `--entry`, and `--enable` options.
+  and `--entry` options.
 - Added atomic external plugin updates and confirmed removal through
   `plugin update` and `plugin remove`.
 - Added self-contained profile format version 1 with SHA-256 checksums,

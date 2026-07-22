@@ -80,7 +80,7 @@ is configured automatically.
 dreamzsh plugin repo add
 dreamzsh plugin browse
 dreamzsh plugin info <name>
-dreamzsh plugin install <name> --enable
+dreamzsh plugin install <name>
 ```
 
 `plugin repo add` without a URL fetches the built-in official repository. Extra
@@ -114,10 +114,13 @@ URL:
 
 ```console
 dreamzsh plugin install user/repository
-dreamzsh plugin install https://github.com/user/repository.git --enable
+dreamzsh plugin install https://github.com/user/repository.git
 dreamzsh plugin update --all
 dreamzsh plugin remove <name>
 ```
+
+Installed plugins are enabled immediately. Use `plugin disable <name>` to keep
+an installed plugin without loading it.
 
 ### Creating a plugin
 

@@ -114,7 +114,7 @@ output="$(run_cli plugin info catalog-test --repo official)" || fail "CLI remote
 [[ "$output" == *"Repository: official"* ]] || fail "CLI did not show remote plugin info"
 pass "official repository browse and metadata"
 
-run_cli plugin install catalog-test --enable >/dev/null || fail "install registry plugin through CLI"
+run_cli plugin install catalog-test >/dev/null || fail "install registry plugin through CLI"
 dz::config::load || fail "reload configuration after CLI install"
 [[ -f "$DREAMZSH_CUSTOM_PLUGINS_DIR/catalog-test/source.meta" ]] || fail "registry source metadata missing"
 [[ "$(dz::plugin::source_value catalog-test type)" == registry ]] || fail "registry source type missing"
