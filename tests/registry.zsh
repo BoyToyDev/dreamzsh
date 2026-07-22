@@ -103,8 +103,7 @@ DREAMZSH_PLUGINS=(git)
 
 output="$(dz::registry::repo_list)" || fail "list repositories"
 [[ "$output" == *official*not-fetched* ]] || fail "official repository is not built in"
-run_cli plugin repo add >/dev/null || fail "sync official repository through CLI"
-output="$(dz::registry::browse)" || fail "browse registry"
+output="$(run_cli plugin browse)" || fail "automatically sync and browse official repository"
 [[ "$output" == *catalog-test*official*available* ]] || fail "official plugin was not listed"
 output="$(run_cli plugin browse --repo official)" || fail "CLI registry browse routing"
 [[ "$output" == *catalog-test*official* ]] || fail "CLI did not list the official plugin"

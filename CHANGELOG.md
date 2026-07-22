@@ -14,6 +14,10 @@ available in `CHANGELOG.ru.md`. New changes should first be recorded under
 
 - `plugin install` now enables newly installed plugins immediately; the
   redundant `--enable` option was removed from the CLI.
+- The official plugin catalog is now fetched automatically by `browse`, `info`,
+  and `install`; `plugin repo add` is reserved for additional repositories.
+- Reworked the English README and added a synchronized Russian `README.ru.md`
+  with a language switch and a reproducible VHS demo script.
 
 #### Fixed
 

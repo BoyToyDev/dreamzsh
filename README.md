@@ -1,256 +1,196 @@
-# 🚀 DreamZSH
+<p align="center">
+  <strong>English</strong> · <a href="README.ru.md">Русский</a>
+</p>
 
-![GitHub stars](https://img.shields.io/github/stars/BoyToyDev/dreamzsh?style=flat)
-![GitHub last commit](https://img.shields.io/github/last-commit/BoyToyDev/dreamzsh)
-![License](https://img.shields.io/github/license/BoyToyDev/dreamzsh)
+<div align="center">
 
-> **Stop editing `.zshrc`. Manage your shell like a system.**  
-> **Zsh config as managed state, not handwritten files.**
+# ✨ DreamZSH
 
-DreamZSH is a lightweight, CLI-driven Zsh framework focused on usability and
-predictable behavior. Plugins, themes, profiles, backups, and diagnostics are
-managed with commands instead of manual edits to `.zshrc`.
+### Your Zsh setup, managed through a CLI
 
----
+Plugins, themes, and portable profiles without manually editing shell config.
 
-## 🧠 Concept
+[![CI](https://github.com/BoyToyDev/dreamzsh/actions/workflows/ci.yml/badge.svg)](https://github.com/BoyToyDev/dreamzsh/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Zsh](https://img.shields.io/badge/shell-Zsh-6f42c1.svg)](https://www.zsh.org/)
 
-Traditional Zsh setups are usually managed by editing shell files. DreamZSH
-takes a different approach:
+[Quick start](#-quick-start) · [Plugins](#-plugins) · [Profiles](#-portable-profiles) · [Commands](#-command-map)
 
-- use a CLI for everyday configuration;
-- keep built-in resources separate from user-managed resources;
-- make profiles portable and safe to share;
-- report configuration problems instead of failing silently.
+<img src="docs/assets/dreamzsh-demo.gif" alt="DreamZSH terminal demonstration" width="900">
 
----
+</div>
 
-## ⚡ Installation
+## Why DreamZSH?
 
-DreamZSH currently targets Linux with Zsh 5.0 or newer.
+- Manage your shell through discoverable commands and TAB completion.
+- Enable, disable, inspect, and update plugins without editing `.zshrc`.
+- Install plugins from the official catalog or any compatible Git repository.
+- Export themes and external plugins as self-contained, shareable profiles.
+- Keep configuration changes safe with atomic writes and verified imports.
+- Extend a small, readable Zsh codebase instead of learning a private format.
 
-```sh
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/BoyToyDev/dreamzsh/master/install.sh)"
+> DreamZSH is currently developed and tested for Linux. macOS support is not a
+> current target.
+
+## 🚀 Quick start
+
+```zsh
+git clone https://github.com/BoyToyDev/dreamzsh.git ~/.dreamzsh
+zsh ~/.dreamzsh/install.sh
 ```
 
-The interactive installer checks whether Zsh is installed, can offer to install
-it through a supported Linux package manager, and checks whether the login shell
-was switched successfully.
+The interactive installer checks for Zsh, can install it through a supported
+Linux package manager, and can offer to make it your login shell. Start a new
+shell after installation:
 
-After installation, start a new Zsh session when prompted.
-
----
-
-## ⚡ Quick start
-
-```console
-dreamzsh status
+```zsh
+exec zsh
 dreamzsh doctor
+```
+
+Discover the CLI without memorizing it:
+
+```text
+dreamzsh <TAB><TAB>
+dreamzsh plugin <TAB><TAB>
+dreamzsh theme preview <TAB><TAB>
+```
+
+## 🧩 Plugins
+
+### Built-in plugins
+
+```zsh
 dreamzsh plugin list
-dreamzsh theme list
-dreamzsh profile list
-dreamzsh help
-```
-
-Use command-specific help when needed:
-
-```console
-dreamzsh plugin install --help
-dreamzsh help profile export
-```
-
----
-
-## 🔌 Plugins
-
-Enable or disable one or more installed plugins:
-
-```console
-dreamzsh plugin enable git navigation history
+dreamzsh plugin enable git history
 dreamzsh plugin disable history
-dreamzsh reload
+dreamzsh plugin info git
 ```
 
-### Official plugin repository
+Disabling a plugin keeps it installed and available for profiles.
 
-The official [DreamZSH plugin repository](https://github.com/BoyToyDev/dreamzsh-plugins)
-is configured automatically.
+### Official catalog
 
-```console
-dreamzsh plugin repo add
+The official [DreamZSH plugin catalog](https://github.com/BoyToyDev/dreamzsh-plugins)
+is built in. It is fetched automatically on the first `browse`, `info`, or
+`install` command—there is no repository setup step.
+
+```zsh
 dreamzsh plugin browse
 dreamzsh plugin info <name>
 dreamzsh plugin install <name>
 ```
 
-`plugin repo add` without a URL fetches the built-in official repository. Extra
-repositories can be connected without assigning an alias manually:
+Installation enables the plugin immediately. If dependency validation or
+activation fails, DreamZSH rolls the installation back.
 
-```console
+### Extra catalogs and Git repositories
+
+```zsh
 dreamzsh plugin repo add owner/repository
 dreamzsh plugin repo list
 dreamzsh plugin repo update --all
 dreamzsh plugin repo remove repository
+
+dreamzsh plugin install owner/plugin
+dreamzsh plugin install https://github.com/owner/plugin.git
 ```
 
-A plugin repository uses this layout:
-
-```text
-plugins/
-└── plugin-name/
-    ├── plugin.zsh
-    ├── plugin.meta
-    └── README.md
-```
-
-Repository metadata is read as data when browsing; it is not executed. Plugin
-installation and updates are atomic, and the source URL, ref, commit, and path
-are recorded locally.
-
-### Any Git repository
-
-Plugins can also be installed directly from a GitHub shorthand or HTTPS Git
-URL:
-
-```console
-dreamzsh plugin install user/repository
-dreamzsh plugin install https://github.com/user/repository.git
-dreamzsh plugin update --all
-dreamzsh plugin remove <name>
-```
-
-Installed plugins are enabled immediately. Use `plugin disable <name>` to keep
-an installed plugin without loading it.
-
-### Creating a plugin
-
-```console
-dreamzsh plugin create my-plugin
-dreamzsh plugin enable my-plugin
-```
-
-User-created and downloaded plugins are stored under `~/.dreamzsh/custom/`, so
-they do not modify the framework's Git worktree.
-
-Plugin metadata can declare two kinds of requirements:
-
-```zsh
-requires_plugins="git"
-requires_commands="git fzf"
-```
-
----
+Registry metadata is read as data rather than executed. Repository caches,
+plugin installs, and plugin updates are replaced atomically.
 
 ## 🎨 Themes
 
-```console
+```zsh
 dreamzsh theme list
-dreamzsh theme set minimal
-dreamzsh theme preview dream-smart
+dreamzsh theme preview dream-mini
+dreamzsh theme set dream-powerline
+dreamzsh theme current
+```
+
+`preview` renders a theme without saving it. `set` makes it active.
+
+## 📦 Portable profiles
+
+A profile can carry the active theme, additional themes, enabled plugins, and
+snapshots of external plugins. That makes a shell setup reproducible and easy
+to share without relying on the original plugin repositories.
+
+```zsh
+dreamzsh profile export My_super_profile
+dreamzsh profile import ./My_super_profile.tar.gz
+dreamzsh profile apply My_super_profile
+```
+
+Imports validate paths and SHA-256 checksums before changing local state.
+
+## 🗺️ Command map
+
+| Task | Command |
+|---|---|
+| Check the installation | `dreamzsh doctor` |
+| Show current state | `dreamzsh status` |
+| Browse official plugins | `dreamzsh plugin browse` |
+| Install and enable a plugin | `dreamzsh plugin install <name>` |
+| Enable an installed plugin | `dreamzsh plugin enable <name>` |
+| Preview a theme | `dreamzsh theme preview <name>` |
+| Export a portable profile | `dreamzsh profile export <name>` |
+| Reload the current shell | `dreamzsh reload` |
+| Show startup statistics | `dreamzsh stats` |
+| Update DreamZSH | `dreamzsh update` |
+
+Every command has focused help:
+
+```zsh
+dreamzsh help plugin
+dreamzsh plugin install --help
+dreamzsh profile export --help
+```
+
+## 🛠️ Creating extensions
+
+```zsh
+dreamzsh plugin create my-plugin
 dreamzsh theme create my-theme
 ```
 
-Themes can register runtime hooks and provide a cleanup function, allowing
-DreamZSH to switch themes without leaving stale prompt hooks behind.
-
----
-
-## 🧬 Profiles
-
-Profiles combine a theme, a plugin set, and shareable custom resources.
-
-```console
-dreamzsh profile apply default
-dreamzsh profile export My_super_prof
-dreamzsh profile import My_super_prof.tar.gz --apply
-```
-
-An exported profile can use any new name. Self-contained archives include
-selected themes and external plugin snapshots, source metadata, and SHA-256
-checksums, so the profile can be shared and imported offline.
-
----
-
-## 🛠 Maintenance
-
-```console
-dreamzsh backup create --all
-dreamzsh backup list
-dreamzsh doctor
-dreamzsh doctor --fix
-dreamzsh stats
-dreamzsh update
-dreamzsh reload
-dreamzsh uninstall
-```
-
-`dreamzsh reload` replaces the current interactive Zsh process and loads the
-updated configuration. `dreamzsh update` uses a fast-forward Git update and
-refuses to overwrite local framework changes.
-
----
-
-## ⚙️ Configuration
-
-DreamZSH adds a small managed block to `.zshrc` and keeps its managed state in
-`~/.dreamzsh/dreamzsh.conf`.
-
-Common paths:
+A catalog plugin uses a compact layout:
 
 ```text
-~/.dreamzsh/
-├── core/                 framework code
-├── plugins/              built-in plugins
-├── themes/               built-in themes
-├── profiles/             built-in profiles
-├── custom/               user-managed resources
-│   ├── plugins/
-│   ├── themes/
-│   ├── profiles/
-│   └── plugin-repos/     cached plugin repositories
-└── backups/
+plugins/plugin-name/
+├── plugin.zsh
+├── plugin.meta
+└── README.md
 ```
 
-Configuration writes are atomic. Existing configuration symlinks are preserved
-by replacing their target instead of the symlink itself.
+Plugin metadata distinguishes DreamZSH plugin dependencies from required system
+commands through `requires_plugins` and `requires_commands`.
 
-## ⚔️ Why DreamZSH?
+## 🧪 Reliability
 
-| | Traditional Zsh setup | DreamZSH |
-|---|---|---|
-| Configuration | edit `.zshrc` manually | managed CLI |
-| Visibility | scattered shell code | `status`, `info`, `stats` |
-| Diagnostics | manual investigation | `doctor` |
-| Recovery | manual copies | atomic writes and backups |
-| Switching setups | rewrite config | portable profiles |
-| Plugins | manual cloning | registry and Git installation |
+DreamZSH uses isolated CLI smoke tests, lifecycle and dependency tests, registry
+tests with local Git fixtures, installer tests, Zsh syntax checks, and Linux CI.
+Configuration writes, repository refreshes, plugin updates, and profile imports
+are designed to avoid partial state.
 
----
+## 📼 Rebuilding the demo
 
-## 🧪 Development
+The README animation is reproducible with [VHS](https://github.com/charmbracelet/vhs):
 
-The project includes isolated CLI smoke tests, installer tests, lifecycle and
-dependency tests, plugin registry tests, Zsh syntax checks, and an Ubuntu GitHub
-Actions workflow.
+```zsh
+vhs docs/demo.tape
+```
 
-Notable changes are recorded in [CHANGELOG.md](CHANGELOG.md) and
-[CHANGELOG.ru.md](CHANGELOG.ru.md).
+## Roadmap
 
----
+- Grow the official plugin catalog.
+- Improve dependency diagnostics and profile portability.
+- Add more themes and extension documentation.
+- Add self-update controls and optional lazy loading when the design is ready.
 
-## 🧠 Philosophy
+See [CHANGELOG.md](CHANGELOG.md) for development history. Contributions and
+focused issue reports are welcome.
 
-- CLI-driven management;
-- minimal manual intervention;
-- transparent and reversible behavior;
-- useful diagnostics;
-- no unnecessary startup overhead.
+## License
 
-Your shell configuration should be predictable, reproducible, and debuggable.
-DreamZSH treats it as managed state rather than an unstructured text file.
-
-Ideas, issues, and pull requests are welcome.
-
-## ⭐ Support
-
-If you like the project, give it a star ⭐
+[MIT](LICENSE)

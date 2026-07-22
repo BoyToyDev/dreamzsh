@@ -123,11 +123,11 @@ dz::registry::repo_add() {
   local source="${1:-}"
   local ref="" url id tmp_file existing_id existing_url existing_ref
 
-  if [[ -z "$source" ]]; then
-    dz::info "The official plugin repository is built in."
-    dz::registry::sync official
-    return $?
-  fi
+  [[ -n "$source" ]] || {
+    dz::error "Plugin repository URL is required"
+    dz::info "The official repository is loaded automatically by browse, info, and install."
+    return 1
+  }
   shift
 
   while (( $# > 0 )); do

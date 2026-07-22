@@ -32,7 +32,7 @@ Plugin commands:
   dreamzsh plugin list
   dreamzsh plugin browse [--repo <name>] [--refresh]
   dreamzsh plugin repo list
-  dreamzsh plugin repo add [<owner/repo|https-url>] [--ref <ref>]
+  dreamzsh plugin repo add <owner/repo|https-url> [--ref <ref>]
   dreamzsh plugin repo remove <name>
   dreamzsh plugin repo update [<name>|--all]
   dreamzsh plugin create <name>
