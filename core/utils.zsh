@@ -73,7 +73,16 @@ dz::die() {
 dreamzsh() {
   if [[ "${1:-}" == "reload" ]]; then
     case "${2:-}" in
-      ""|--exec)
+      "")
+        local zshrc="${ZDOTDIR:-$HOME}/.zshrc"
+        [[ -r "$zshrc" ]] || {
+          dz::error "Zsh configuration not found: $zshrc"
+          return 1
+        }
+        source "$zshrc"
+        return $?
+        ;;
+      --exec)
         if [[ -n "${HISTFILE:-}" ]]; then
           fc -AI "$HISTFILE" 2>/dev/null || true
         fi

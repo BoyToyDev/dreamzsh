@@ -29,6 +29,9 @@ available in `CHANGELOG.ru.md`. New changes should first be recorded under
   current interactive prompt.
 - Preserve recent command history across `dreamzsh reload` by flushing it
   before `exec zsh` and importing persisted entries when the history plugin loads.
+- Changed the default `dreamzsh reload` to source `.zshrc` in the current shell,
+  preserving in-memory state; a full process replacement remains available as
+  `dreamzsh reload --exec`.
 
 ### 2026-07-21
 

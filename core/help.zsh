@@ -129,13 +129,13 @@ TXT
 
 dz::help::reload() {
   cat <<'EOF'
-Usage: dreamzsh reload
+Usage: dreamzsh reload [--exec]
 
-Replace the current interactive Zsh process and load DreamZSH again.
-The command works through the shell function installed by DreamZSH.
+Source ~/.zshrc in the current interactive shell, preserving shell history,
+jobs, directory stack, and other runtime state.
 
-Fallback:
-  exec zsh
+Options:
+  --exec    Flush history and replace the current process with a fresh Zsh.
 EOF
 }
 

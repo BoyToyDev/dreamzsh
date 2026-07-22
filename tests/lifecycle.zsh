@@ -135,7 +135,7 @@ history_flush_file="$TEST_ROOT/history-flush"
   HISTFILE="$TEST_ROOT/history"
   fc() { print -r -- "$*" > "$history_flush_file"; }
   DREAMZSH_ZSH_BIN="${commands[true]:-/usr/bin/true}"
-  dreamzsh reload
+  dreamzsh reload --exec
 )
 [[ "$(cat "$history_flush_file" 2>/dev/null)" == "-AI $TEST_ROOT/history" ]] \
   || fail "reload did not flush command history before exec"
@@ -143,6 +143,17 @@ pass "history flush before reload"
 
 real_zsh="${commands[zsh]:-/usr/bin/zsh}"
 mkdir -p "$TEST_ROOT/zdot"
+cat > "$TEST_ROOT/zdot/.zshrc" <<EOF
+print -r -- sourced > "$TEST_ROOT/sourced"
+EOF
+
+ZDOTDIR="$TEST_ROOT/zdot" \
+DREAMZSH_DIR="$REPO_DIR" \
+  "$real_zsh" -c 'source "$DREAMZSH_DIR/core/utils.zsh"; dreamzsh reload' \
+  || fail "source reload wrapper failed"
+[[ "$(cat "$TEST_ROOT/sourced" 2>/dev/null)" == "sourced" ]] \
+  || fail "reload did not source .zshrc"
+
 cat > "$TEST_ROOT/zdot/.zshenv" <<EOF
 print -r -- reloaded > "$TEST_ROOT/reloaded"
 EOF
@@ -150,15 +161,15 @@ EOF
 ZDOTDIR="$TEST_ROOT/zdot" \
 DREAMZSH_ZSH_BIN="$real_zsh" \
 DREAMZSH_DIR="$REPO_DIR" \
-  "$real_zsh" -c 'source "$DREAMZSH_DIR/core/utils.zsh"; dreamzsh reload' \
-  || fail "reload wrapper failed"
+  "$real_zsh" -c 'source "$DREAMZSH_DIR/core/utils.zsh"; dreamzsh reload --exec' \
+  || fail "exec reload wrapper failed"
 [[ "$(cat "$TEST_ROOT/reloaded" 2>/dev/null)" == "reloaded" ]] \
-  || fail "reload did not exec zsh"
+  || fail "reload --exec did not replace zsh"
 
 output="$(DREAMZSH_ZSH_BIN="$real_zsh" DREAMZSH_DIR="$REPO_DIR" \
   "$real_zsh" -c 'source "$DREAMZSH_DIR/core/utils.zsh"; dreamzsh --version')" \
   || fail "CLI delegation failed"
 [[ "$output" == DreamZSH\ * ]] || fail "wrapper did not delegate to CLI"
-pass "real shell reload and CLI delegation"
+pass "source reload, exec reload, and CLI delegation"
 
 print -r -- "All lifecycle tests passed."
