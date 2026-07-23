@@ -229,12 +229,15 @@ dz::registry::repo_update() {
 }
 
 dz::registry::plugin_dirs() {
-  local id="$1" cache base dir
+  local id="$1" cache base dir meta source_url
   cache="$(dz::registry::cache_dir "$id")"
   base="$cache/plugins"
   [[ -d "$base" ]] || base="$cache"
   for dir in "$base"/*(N/); do
-    [[ "${dir:t}" == ".git" || ! -f "$dir/plugin.zsh" ]] && continue
+    [[ "${dir:t}" == ".git" ]] && continue
+    meta="$dir/plugin.meta"
+    source_url="$(dz::registry::meta_value "$meta" source_url 2>/dev/null)"
+    [[ -f "$dir/plugin.zsh" || -n "$source_url" ]] || continue
     print -r -- "$dir"
   done
 }
@@ -315,7 +318,7 @@ dz::registry::plugin_info() {
   print -r -- "Origin: repository"
   print -r -- "Repository: $id"
   print -r -- "URL: $url"
-  for key in plugin_name description version author tags requires_plugins requires_commands; do
+  for key in plugin_name description version author tags requires_plugins requires_commands source_url source_ref source_entrypoint; do
     value="$(dz::registry::meta_value "$meta" "$key" 2>/dev/null)" || continue
     [[ -n "$value" ]] && print -r -- "${(C)${key//_/ }}: $value"
   done
@@ -327,9 +330,74 @@ dz::registry::plugin_info() {
   fi
 }
 
+dz::registry::check_requirements() {
+  local name="$1" dir="$2" meta="$dir/plugin.meta"
+  local plugin_requirements command_requirements requirement
+  local -a missing_plugins=() missing_commands=()
+
+  plugin_requirements="$(dz::registry::meta_value "$meta" requires_plugins 2>/dev/null)"
+  [[ -n "$plugin_requirements" ]] \
+    || plugin_requirements="$(dz::registry::meta_value "$meta" requires 2>/dev/null)"
+  command_requirements="$(dz::registry::meta_value "$meta" requires_commands 2>/dev/null)"
+
+  plugin_requirements="${plugin_requirements//,/ }"
+  for requirement in ${(s: :)plugin_requirements}; do
+    [[ -z "$requirement" ]] && continue
+    dz::array_contains "$requirement" "${DREAMZSH_PLUGINS[@]}" || missing_plugins+=("$requirement")
+  done
+  command_requirements="${command_requirements//,/ }"
+  for requirement in ${(s: :)command_requirements}; do
+    [[ -z "$requirement" ]] && continue
+    command -v "$requirement" >/dev/null 2>&1 || missing_commands+=("$requirement")
+  done
+
+  if (( ${#missing_plugins[@]} > 0 )); then
+    dz::error "Plugin '$name' requires enabled plugins: ${missing_plugins[*]}"
+    return 1
+  fi
+  if (( ${#missing_commands[@]} > 0 )); then
+    dz::error "Plugin '$name' requires installed commands: ${missing_commands[*]}"
+    return 1
+  fi
+}
+
 dz::registry::prepare_plugin() {
   local target="$1" name="$2" repo="$3" url="$4" ref="$5" rel="$6" source_dir="$7"
-  local commit link meta
+  local commit link meta source_url source_ref source_entrypoint upstream_commit upstream_entrypoint
+
+  meta="$source_dir/plugin.meta"
+  source_url="$(dz::registry::meta_value "$meta" source_url 2>/dev/null)"
+  source_ref="$(dz::registry::meta_value "$meta" source_ref 2>/dev/null)"
+  source_entrypoint="$(dz::registry::meta_value "$meta" source_entrypoint 2>/dev/null)"
+
+  if [[ -n "$source_url" ]]; then
+    [[ -f "$meta" ]] || { dz::error "Referenced registry plugin is missing plugin.meta: $name"; return 1; }
+    source_url="$(dz::plugin::normalize_source "$source_url")" || return 1
+    dz::plugin::valid_ref "$source_ref" || { dz::error "Invalid source_ref for registry plugin: $name"; return 1; }
+    [[ -z "$source_entrypoint" ]] || dz::plugin::valid_entrypoint "$source_entrypoint" || {
+      dz::error "Invalid source_entrypoint for registry plugin: $name"
+      return 1
+    }
+    dz::plugin::prepare_external "$target" "$source_url" "$name" "$source_ref" "$source_entrypoint" || return 1
+    cp -- "$meta" "$target/plugin.meta" || return 1
+    [[ -f "$source_dir/README.md" ]] && cp -- "$source_dir/README.md" "$target/README.md"
+    upstream_commit="$(dz::plugin::source_value_from_file "$target/source.meta" commit)" || return 1
+    upstream_entrypoint="$(dz::plugin::source_value_from_file "$target/source.meta" entrypoint)" || return 1
+    commit="$(git -C "$(dz::registry::cache_dir "$repo")" rev-parse HEAD 2>/dev/null)" || return 1
+    cat > "$target/source.meta" <<EOF
+type=registry-reference
+repo=$repo
+catalog_url=$url
+catalog_ref=$ref
+catalog_commit=$commit
+path=$rel
+url=$source_url
+ref=$source_ref
+commit=$upstream_commit
+entrypoint=$upstream_entrypoint
+EOF
+    return 0
+  fi
 
   [[ -f "$source_dir/plugin.zsh" ]] || { dz::error "Registry plugin is missing plugin.zsh: $name"; return 1; }
   link="$(find "$source_dir" -type l -print -quit 2>/dev/null)"
@@ -387,6 +455,7 @@ dz::registry::install() {
   fi
   record="$(dz::registry::find_plugin "$name" "$wanted_repo")" || return 1
   IFS='|' read -r id url ref rel dir <<< "$record"
+  dz::registry::check_requirements "$name" "$dir" || return 1
 
   mkdir -p "$DREAMZSH_CUSTOM_PLUGINS_DIR" || return 1
   tmp="$(mktemp -d "$DREAMZSH_CUSTOM_PLUGINS_DIR/.install.XXXXXX")" || return 1
@@ -403,23 +472,27 @@ dz::registry::install() {
 }
 
 dz::registry::update_installed() {
-  local name="$1" repo url ref rel old_commit record id found_url found_ref found_rel dir tmp destination old new_commit
+  local name="$1" repo url ref rel old_commit old_catalog_commit record id found_url found_ref found_rel dir tmp destination old new_commit new_catalog_commit
   repo="$(dz::plugin::source_value "$name" repo)" || return 1
   old_commit="$(dz::plugin::source_value "$name" commit)"
+  old_catalog_commit="$(dz::plugin::source_value "$name" catalog_commit 2>/dev/null)" || old_catalog_commit="$old_commit"
   dz::registry::sync "$repo" || return 1
   record="$(dz::registry::find_plugin "$name" "$repo")" || return 1
   IFS='|' read -r id found_url found_ref found_rel dir <<< "$record"
-  new_commit="$(git -C "$(dz::registry::cache_dir "$repo")" rev-parse HEAD 2>/dev/null)" || return 1
-  if [[ "$old_commit" == "$new_commit" ]]; then
-    dz::success "Plugin is already up to date: $name"
-    return 0
-  fi
-
   destination="$DREAMZSH_CUSTOM_PLUGINS_DIR/$name"
   tmp="$(mktemp -d "$DREAMZSH_CUSTOM_PLUGINS_DIR/.update.XXXXXX")" || return 1
   dz::registry::prepare_plugin "$tmp" "$name" "$id" "$found_url" "$found_ref" "$found_rel" "$dir" || {
     rm -rf -- "$tmp"; return 1
   }
+  new_commit="$(dz::plugin::source_value_from_file "$tmp/source.meta" commit)" || { rm -rf -- "$tmp"; return 1; }
+  new_catalog_commit="$(dz::plugin::source_value_from_file "$tmp/source.meta" catalog_commit 2>/dev/null)" \
+    || new_catalog_commit="$new_commit"
+  if [[ "$old_commit" == "$new_commit" && "$old_catalog_commit" == "$new_catalog_commit" ]]; then
+    rm -rf -- "$tmp"
+    dz::success "Plugin is already up to date: $name"
+    return 0
+  fi
+
   old="$DREAMZSH_CUSTOM_PLUGINS_DIR/.old-${name}-$$"
   mv -- "$destination" "$old" || { rm -rf -- "$tmp"; return 1; }
   if ! mv -- "$tmp" "$destination"; then

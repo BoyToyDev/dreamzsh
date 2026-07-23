@@ -129,7 +129,7 @@ dz::plugin::info() {
     print -r -- ""
     print -r -- "--- External source ---"
     print -r -- "Type: $source_type"
-    if [[ "$source_type" == "registry" ]]; then
+    if [[ "$source_type" == "registry" || "$source_type" == "registry-reference" ]]; then
       print -r -- "Repository: $(dz::plugin::source_value "$name" repo)"
       print -r -- "Path: $(dz::plugin::source_value "$name" path)"
     fi
@@ -238,6 +238,13 @@ dz::plugin::source_value() {
   local name="$1"
   local wanted="$2"
   local meta_file="$DREAMZSH_CUSTOM_PLUGINS_DIR/$name/source.meta"
+
+  dz::plugin::source_value_from_file "$meta_file" "$wanted"
+}
+
+dz::plugin::source_value_from_file() {
+  local meta_file="$1"
+  local wanted="$2"
   local key value
 
   [[ -f "$meta_file" ]] || return 1
@@ -486,7 +493,7 @@ dz::plugin::update_one() {
   }
 
   source_type="$(dz::plugin::source_value "$name" type 2>/dev/null)" || source_type="git"
-  if [[ "$source_type" == "registry" ]]; then
+  if [[ "$source_type" == "registry" || "$source_type" == "registry-reference" ]]; then
     dz::registry::update_installed "$name"
     return $?
   fi

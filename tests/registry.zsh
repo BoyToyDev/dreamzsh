@@ -64,6 +64,17 @@ EOF
   git -C "$repo" commit -qm "registry $version"
 }
 
+make_upstream_plugin() {
+  local repo="$1" version="$2"
+  mkdir -p "$repo"
+  print -r -- "typeset -g REFERENCE_PLUGIN_VERSION=\"$version\"" > "$repo/reference.plugin.zsh"
+  git -C "$repo" init -q -b main
+  git -C "$repo" config user.name "DreamZSH Tests"
+  git -C "$repo" config user.email "tests@dreamzsh.invalid"
+  git -C "$repo" add .
+  git -C "$repo" commit -qm "upstream $version"
+}
+
 file_url() {
   local file_path="$1"
   if [[ "$OSTYPE" == msys* || "$OSTYPE" == cygwin* ]]; then
@@ -82,8 +93,45 @@ file_url() {
 
 official_source="$TEST_ROOT/official-source"
 extra_source="$TEST_ROOT/extra-source"
+reference_source="$TEST_ROOT/reference-source"
 make_registry "$official_source" catalog-test 1.0.0
 make_registry "$extra_source" extra-test 1.0.0
+make_upstream_plugin "$reference_source" 1.0.0
+mkdir -p "$official_source/plugins/reference-test"
+cat > "$official_source/plugins/reference-test/plugin.meta" <<'EOF'
+plugin_name="Referenced test plugin"
+description="Registry entry backed by an upstream Git repository"
+version="1.0.0"
+author="DreamZSH tests"
+tags="test registry reference"
+requires_plugins=""
+requires_commands=""
+source_url="https://example.invalid/reference-plugin.git"
+source_ref="main"
+source_entrypoint="reference.plugin.zsh"
+EOF
+cat > "$official_source/plugins/reference-test/README.md" <<'EOF'
+# Referenced test plugin
+
+The code for this test plugin is fetched from its upstream repository.
+EOF
+git -C "$official_source" add .
+git -C "$official_source" commit -qm "add referenced plugin"
+mkdir -p "$official_source/plugins/missing-command-test"
+cat > "$official_source/plugins/missing-command-test/plugin.zsh" <<'EOF'
+typeset -g MISSING_COMMAND_PLUGIN_LOADED=1
+EOF
+cat > "$official_source/plugins/missing-command-test/plugin.meta" <<'EOF'
+plugin_name="Missing command test"
+description="Plugin with an unavailable system command"
+version="1.0.0"
+author="DreamZSH tests"
+tags="test dependency"
+requires_plugins=""
+requires_commands="dreamzsh-command-that-does-not-exist"
+EOF
+git -C "$official_source" add .
+git -C "$official_source" commit -qm "add dependency fixture"
 
 cat > "$GIT_CONFIG_GLOBAL" <<EOF
 [protocol "file"]
@@ -92,6 +140,8 @@ cat > "$GIT_CONFIG_GLOBAL" <<EOF
   insteadOf = $DREAMZSH_OFFICIAL_PLUGIN_REPO_URL
 [url "$(file_url "$extra_source")"]
   insteadOf = https://example.invalid/dreamzsh-extra.git
+[url "$(file_url "$reference_source")"]
+  insteadOf = https://example.invalid/reference-plugin.git
 EOF
 
 source "$DREAMZSH_DIR/core/utils.zsh" || fail "load utils"
@@ -113,6 +163,15 @@ output="$(run_cli plugin info catalog-test --repo official)" || fail "CLI remote
 [[ "$output" == *"Repository: official"* ]] || fail "CLI did not show remote plugin info"
 pass "official repository browse and metadata"
 
+if output="$(run_cli plugin install missing-command-test 2>&1)"; then
+  fail "registry install ignored a missing command"
+fi
+[[ "$output" == *"requires installed commands: dreamzsh-command-that-does-not-exist"* ]] \
+  || fail "registry dependency diagnostic was not actionable"
+[[ ! -e "$DREAMZSH_CUSTOM_PLUGINS_DIR/missing-command-test" ]] \
+  || fail "failed dependency preflight left plugin files behind"
+pass "registry dependency preflight"
+
 run_cli plugin install catalog-test >/dev/null || fail "install registry plugin through CLI"
 dz::config::load || fail "reload configuration after CLI install"
 [[ -f "$DREAMZSH_CUSTOM_PLUGINS_DIR/catalog-test/source.meta" ]] || fail "registry source metadata missing"
@@ -121,6 +180,24 @@ dz::plugin::load_one catalog-test || fail "load registry plugin"
 [[ "${REGISTRY_PLUGIN_VERSION:-}" == 1.0.0 ]] || fail "wrong installed plugin version"
 [[ " ${DREAMZSH_PLUGINS[*]} " == *" catalog-test "* ]] || fail "registry plugin was not enabled"
 pass "registry plugin installation and loading"
+
+output="$(run_cli plugin info reference-test --repo official)" || fail "referenced plugin info"
+[[ "$output" == *"Source Url: https://example.invalid/reference-plugin.git"* ]] \
+  || fail "referenced plugin source metadata was not shown"
+run_cli plugin install reference-test >/dev/null || fail "install referenced registry plugin"
+[[ "$(dz::plugin::source_value reference-test type)" == registry-reference ]] \
+  || fail "referenced registry source type missing"
+dz::plugin::load_one reference-test || fail "load referenced registry plugin"
+[[ "${REFERENCE_PLUGIN_VERSION:-}" == 1.0.0 ]] || fail "wrong referenced plugin version"
+
+print -r -- 'typeset -g REFERENCE_PLUGIN_VERSION="2.0.0"' > "$reference_source/reference.plugin.zsh"
+git -C "$reference_source" add .
+git -C "$reference_source" commit -qm "upstream 2.0.0"
+dz::plugin::update_one reference-test >/dev/null || fail "update referenced registry plugin"
+unset REFERENCE_PLUGIN_VERSION
+dz::plugin::load_one reference-test || fail "load updated referenced registry plugin"
+[[ "${REFERENCE_PLUGIN_VERSION:-}" == 2.0.0 ]] || fail "referenced plugin did not follow upstream"
+pass "referenced registry plugin install and upstream update"
 
 cat > "$official_source/plugins/catalog-test/plugin.zsh" <<'EOF'
 typeset -g REGISTRY_PLUGIN_VERSION="2.0.0"

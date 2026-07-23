@@ -8,6 +8,19 @@ available in `CHANGELOG.ru.md`. New changes should first be recorded under
 
 ## Unreleased
 
+### 2026-07-23
+
+#### Added
+
+- Added registry entries backed by original upstream Git repositories through
+  `source_url`, `source_ref`, and `source_entrypoint` metadata.
+- Added atomic installation and updates that track both catalog and upstream
+  commits for referenced plugins.
+- Added registry coverage for browsing, inspecting, installing, loading, and
+  updating upstream-backed plugins.
+- Added dependency preflight for catalog installs so missing plugins and system
+  commands are reported before any source is downloaded or configuration changed.
+
 ### 2026-07-22
 
 #### Added

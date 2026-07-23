@@ -165,6 +165,18 @@ plugins/plugin-name/
 └── README.md
 ```
 
+Catalog entries may also reference an original upstream Git repository instead
+of copying third-party source code:
+
+```zsh
+source_url="https://github.com/owner/project.git"
+source_ref="main"
+source_entrypoint="project.plugin.zsh"
+```
+
+DreamZSH clones, validates, and updates that upstream source while the official
+catalog provides its reviewed metadata and documentation.
+
 Plugin metadata distinguishes DreamZSH plugin dependencies from required system
 commands through `requires_plugins` and `requires_commands`.
 
@@ -186,7 +198,8 @@ vhs docs/demo.tape
 
 ## Roadmap
 
-- Grow the official plugin catalog.
+- Grow the official plugin catalog beyond autosuggestions, syntax highlighting,
+  and kubectl tools.
 - Improve dependency diagnostics and profile portability.
 - Add more themes and extension documentation.
 - Explore optional lazy loading when the metadata design is ready.
