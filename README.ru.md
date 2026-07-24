@@ -55,9 +55,7 @@ dreamzsh theme preview <TAB><TAB>
 
 ## 📼 Live demo
 
-<p align="center">
-  <img src="docs/assets/dreamzsh-demo.gif" alt="Демонстрация DreamZSH в терминале" width="900">
-</p>
+![Демонстрация DreamZSH](docs/assets/dreamzsh-demo.gif)
 
 ## 🧩 Плагины
 

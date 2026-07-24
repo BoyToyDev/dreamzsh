@@ -53,9 +53,9 @@ dreamzsh plugin <TAB><TAB>
 dreamzsh theme preview <TAB><TAB>
 ```
 
-<p align="center">
-  <img src="docs/assets/dreamzsh-demo.gif" alt="DreamZSH terminal demonstration" width="900">
-</p>
+## 📼 Live demo
+
+![DreamZSH live demo](docs/assets/dreamzsh-demo.gif)
 
 ## 🧩 Plugins
 
@@ -187,14 +187,6 @@ tests with local Git fixtures, update and uninstall tests, installer tests, Zsh
 syntax checks, and Linux CI.
 Configuration writes, repository refreshes, plugin updates, and profile imports
 are designed to avoid partial state.
-
-## 📼 Rebuilding the demo
-
-The README animation is reproducible with [VHS](https://github.com/charmbracelet/vhs):
-
-```zsh
-vhs docs/demo.tape
-```
 
 ## Roadmap
 
