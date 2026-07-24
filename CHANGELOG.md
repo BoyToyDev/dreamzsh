@@ -20,6 +20,8 @@ available in `CHANGELOG.ru.md`. New changes should first be recorded under
 
 - Consolidated the overlapping `dream`, `work`, and `pro` themes into
   compatibility migrations to `dream-smart` and `dream-mini`.
+- Updates now adopt identical untracked files that became part of DreamZSH and
+  preserve differing local files with a clear conflict report.
 
 ### 2026-07-23
 

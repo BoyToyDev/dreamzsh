@@ -25,6 +25,38 @@ dz::update::upstream() {
   print -r -- "$upstream"
 }
 
+dz::update::reconcile_untracked() {
+  local repo_dir="$1" upstream="$2" file_path
+  local -a identical conflicts
+
+  while IFS= read -r -d '' file_path; do
+    git -C "$repo_dir" cat-file -e "$upstream:$file_path" 2>/dev/null || continue
+    if git -C "$repo_dir" show "$upstream:$file_path" 2>/dev/null \
+        | cmp -s - "$repo_dir/$file_path"; then
+      identical+=("$file_path")
+    else
+      conflicts+=("$file_path")
+    fi
+  done < <(git -C "$repo_dir" ls-files --others --exclude-standard -z)
+
+  if (( ${#conflicts} )); then
+    dz::error "Update contains files that conflict with untracked local files:"
+    for file_path in "${conflicts[@]}"; do
+      print -u2 -r -- "  $file_path"
+    done
+    dz::info "Move these files outside $repo_dir and run 'dreamzsh update' again."
+    return 1
+  fi
+
+  for file_path in "${identical[@]}"; do
+    rm -f -- "$repo_dir/$file_path" || {
+      dz::error "Could not replace the identical local file: $file_path"
+      return 1
+    }
+    dz::info "Adopting identical local file from the update: $file_path"
+  done
+}
+
 dz::update::run() {
   local repo_dir="${DREAMZSH_DIR}"
   local upstream remote branch before after
@@ -57,6 +89,7 @@ dz::update::run() {
 
   before="$(git -C "$repo_dir" rev-parse HEAD)" || return 1
   after="$(git -C "$repo_dir" rev-parse "$upstream")" || return 1
+  dz::update::reconcile_untracked "$repo_dir" "$upstream" || return 1
 
   if [[ "$before" == "$after" ]]; then
     dz::success "DreamZSH is already up to date."

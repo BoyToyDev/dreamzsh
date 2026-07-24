@@ -37,11 +37,34 @@ git clone -q "$remote" "$install"
 
 export DREAMZSH_DIR="$install"
 print -r -- two > "$seed/version"
-git -C "$seed" commit -qam update
+mkdir -p "$seed/docs/assets" "$install/docs/assets"
+print -r -- demo > "$seed/docs/assets/dreamzsh-demo.gif"
+print -r -- demo > "$install/docs/assets/dreamzsh-demo.gif"
+git -C "$seed" add version docs/assets/dreamzsh-demo.gif
+git -C "$seed" commit -qm update
 git -C "$seed" push -qu origin main
 dz::update::run >/dev/null || fail "update from configured upstream"
 [[ "$(<"$install/version")" == two ]] || fail "update did not fast-forward checkout"
+git -C "$install" ls-files --error-unmatch docs/assets/dreamzsh-demo.gif >/dev/null \
+  || fail "identical untracked file was not adopted"
 pass "update follows configured upstream branch"
+pass "update adopts identical untracked files from upstream"
+
+print -r -- upstream > "$seed/incoming"
+git -C "$seed" add incoming
+git -C "$seed" commit -qm conflict
+git -C "$seed" push -qu origin main
+print -r -- local > "$install/incoming"
+before_conflict="$(git -C "$install" rev-parse HEAD)"
+if dz::update::run >/dev/null 2>&1; then
+  fail "update overwrote a differing untracked file"
+fi
+[[ "$(<"$install/incoming")" == local ]] || fail "differing untracked file was changed"
+[[ "$(git -C "$install" rev-parse HEAD)" == "$before_conflict" ]] \
+  || fail "checkout advanced despite an untracked conflict"
+rm -f -- "$install/incoming"
+dz::update::run >/dev/null || fail "update after resolving untracked conflict"
+pass "update preserves differing untracked files"
 
 print -r -- dirty > "$install/version"
 if dz::update::run >/dev/null 2>&1; then
