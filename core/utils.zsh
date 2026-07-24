@@ -18,15 +18,19 @@ __DREAMZSH_UTILS_LOADED=1
 : "${DREAMZSH_PLUGIN_REPOS_DIR:=$DREAMZSH_CUSTOM_DIR/plugin-repos}"
 : "${DREAMZSH_PLUGIN_REPOS_FILE:=$DREAMZSH_CUSTOM_DIR/plugin-repos.conf}"
 
+dz::colors::enable() {
+  [[ -n "${DZ_COLOR_RESET:-}" ]] || DZ_COLOR_RESET='%f%b%k'
+  [[ -n "${DZ_COLOR_RED:-}" ]] || DZ_COLOR_RED='%F{1}'
+  [[ -n "${DZ_COLOR_GREEN:-}" ]] || DZ_COLOR_GREEN='%F{2}'
+  [[ -n "${DZ_COLOR_YELLOW:-}" ]] || DZ_COLOR_YELLOW='%F{3}'
+  [[ -n "${DZ_COLOR_BLUE:-}" ]] || DZ_COLOR_BLUE='%F{4}'
+  [[ -n "${DZ_COLOR_MAGENTA:-}" ]] || DZ_COLOR_MAGENTA='%F{5}'
+  [[ -n "${DZ_COLOR_CYAN:-}" ]] || DZ_COLOR_CYAN='%F{6}'
+  [[ -n "${DZ_COLOR_BOLD:-}" ]] || DZ_COLOR_BOLD='%B'
+}
+
 if [[ -t 1 ]]; then
-  : "${DZ_COLOR_RESET:=%f%b%k}"
-  : "${DZ_COLOR_RED:=%F{1}}"
-  : "${DZ_COLOR_GREEN:=%F{2}}"
-  : "${DZ_COLOR_YELLOW:=%F{3}}"
-  : "${DZ_COLOR_BLUE:=%F{4}}"
-  : "${DZ_COLOR_MAGENTA:=%F{5}}"
-  : "${DZ_COLOR_CYAN:=%F{6}}"
-  : "${DZ_COLOR_BOLD:=%B}"
+  dz::colors::enable
 else
   : "${DZ_COLOR_RESET:=}"
   : "${DZ_COLOR_RED:=}"

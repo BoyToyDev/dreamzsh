@@ -77,13 +77,17 @@ dz::completion::init
 pass "completion registration"
 
 export __DREAMZSH_STARTUP_SECONDS="0.042"
-export DZ_COLOR_RESET='%f%b%k'
-export DZ_COLOR_GREEN='%F{2}'
-export DZ_COLOR_MAGENTA='%F{5}'
-export DZ_COLOR_CYAN='%F{6}'
-export DZ_COLOR_BOLD='%B'
+source "$install_dir/core/utils.zsh"
+unset DZ_COLOR_RESET DZ_COLOR_RED DZ_COLOR_GREEN DZ_COLOR_YELLOW
+unset DZ_COLOR_BLUE DZ_COLOR_MAGENTA DZ_COLOR_CYAN DZ_COLOR_BOLD
+dz::colors::enable
+[[ "$DZ_COLOR_GREEN" == '%F{2}' && "$DZ_COLOR_MAGENTA" == '%F{5}' ]] \
+  || fail "color prompt sequences were truncated"
 output="$(run_cli stats)"
 assert_contains "$output" "42 ms" "startup statistics"
+assert_contains "$output" "0.2.0" "stats DreamZSH version"
+assert_contains "$output" "$ZSH_VERSION" "stats Zsh version"
+assert_contains "$output" "3 enabled" "stats plugin count"
 [[ "$output" != *'%F{'* && "$output" != *'%B'* && "$output" != *'%f'* ]] \
   || fail "stats exposed raw Zsh prompt escapes"
 pass "stats color rendering"
