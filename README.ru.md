@@ -104,12 +104,18 @@ dreamzsh plugin install https://github.com/owner/plugin.git
 
 ```zsh
 dreamzsh theme list
-dreamzsh theme preview dream-mini
+dreamzsh theme preview catppuccin
+dreamzsh theme preview tokyo-night
+dreamzsh theme preview dracula
+dreamzsh theme preview gruvbox
 dreamzsh theme set dream-powerline
 dreamzsh theme current
 ```
 
 `preview` показывает тему без сохранения, а `set` делает её активной.
+Catppuccin, Tokyo Night, Dracula и Gruvbox используют общее сегментное
+приглашение командной строки, но отличаются палитрами. В них отображаются
+состояние Git, результат последней команды и время.
 
 ## 📦 Переносимые профили
 

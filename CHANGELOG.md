@@ -8,6 +8,18 @@ available in `CHANGELOG.ru.md`. New changes should first be recorded under
 
 ## Unreleased
 
+### 2026-07-24
+
+#### Added
+
+- Added segmented Catppuccin, Tokyo Night, Dracula, and Gruvbox themes with
+  Git state, command status, and time.
+
+#### Changed
+
+- Consolidated the overlapping `dream`, `work`, and `pro` themes into
+  compatibility migrations to `dream-smart` and `dream-mini`.
+
 ### 2026-07-23
 
 #### Added

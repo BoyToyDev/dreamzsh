@@ -104,12 +104,17 @@ plugin installs, and plugin updates are replaced atomically.
 
 ```zsh
 dreamzsh theme list
-dreamzsh theme preview dream-mini
+dreamzsh theme preview catppuccin
+dreamzsh theme preview tokyo-night
+dreamzsh theme preview dracula
+dreamzsh theme preview gruvbox
 dreamzsh theme set dream-powerline
 dreamzsh theme current
 ```
 
 `preview` renders a theme without saving it. `set` makes it active.
+Catppuccin, Tokyo Night, Dracula, and Gruvbox use a shared segmented prompt
+engine with their own palettes, Git state, command status, and clock.
 
 ## 📦 Portable profiles
 

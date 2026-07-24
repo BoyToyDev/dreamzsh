@@ -123,6 +123,28 @@ if (( ${+precmd_functions} )) && (( ${precmd_functions[(I)_dz_ctx_build]} > 0 ))
 fi
 pass "theme hook cleanup"
 
+output="$(run_cli theme list)"
+for palette_theme in catppuccin tokyo-night dracula gruvbox; do
+  [[ "$output" == *"$palette_theme"* ]] || fail "palette theme is missing: $palette_theme"
+  dz::theme::apply_by_name "$palette_theme"
+  (( ${precmd_functions[(I)_dz_palette_build]} > 0 )) \
+    || fail "palette hook was not registered: $palette_theme"
+  [[ "$PROMPT" == *''* && "$PROMPT" == *'❯'* ]] \
+    || fail "palette prompt was not built: $palette_theme"
+done
+[[ "$output" != *$'\ndream\n'* && "$output" != *$'\nwork\n'* && "$output" != *$'\npro\n'* ]] \
+  || fail "deprecated themes are still listed"
+pass "segmented palette themes"
+
+dz::theme::apply_by_name dream >/dev/null
+(( ${precmd_functions[(I)dz_build_dream_smart_prompt]} > 0 )) \
+  || fail "deprecated dream theme did not migrate to dream-smart"
+dz::theme::set work >/dev/null
+[[ "$DREAMZSH_THEME" == dream-mini ]] \
+  || fail "deprecated work theme did not migrate to dream-mini"
+dz::theme::set dream-powerline >/dev/null
+pass "deprecated theme migration"
+
 dreamzsh theme preview dream-context >/dev/null
 (( ${precmd_functions[(I)_dz_ctx_build]} > 0 )) \
   || fail "theme preview wrapper did not affect the current shell"

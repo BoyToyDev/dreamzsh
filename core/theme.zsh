@@ -15,6 +15,7 @@ dz::theme::list() {
   for file in "$DREAMZSH_CUSTOM_THEMES_DIR"/*.zsh-theme(N) "$DREAMZSH_THEMES_DIR"/*.zsh-theme(N); do
     name="${file:t}"
     name="${name%.zsh-theme}"
+    [[ "$name" == dream || "$name" == work || "$name" == pro ]] && continue
     [[ -n "${seen[$name]:-}" ]] && continue
     seen[$name]=1
     print -r -- "$name"
@@ -23,6 +24,14 @@ dz::theme::list() {
 
 dz::theme::current() {
   print -r -- "$DREAMZSH_THEME"
+}
+
+dz::theme::resolve_name() {
+  case "$1" in
+    dream|pro) print -r -- "dream-smart" ;;
+    work)      print -r -- "dream-mini" ;;
+    *)         print -r -- "$1" ;;
+  esac
 }
 
 dz::theme::create() {
@@ -128,18 +137,24 @@ dz::theme::reset_runtime() {
 }
 
 dz::theme::apply_by_name() {
-  local theme="$1"
+  local requested_theme="$1"
+  local theme
   local theme_file
 
-  [[ -n "$theme" ]] || {
+  [[ -n "$requested_theme" ]] || {
     dz::error "Theme name is required"
     return 1
   }
 
-  dz::is_valid_name "$theme" || {
-    dz::error "Invalid theme name: $theme"
+  dz::is_valid_name "$requested_theme" || {
+    dz::error "Invalid theme name: $requested_theme"
     return 1
   }
+
+  theme="$(dz::theme::resolve_name "$requested_theme")"
+  if [[ "$theme" != "$requested_theme" ]]; then
+    dz::warn "Theme '$requested_theme' was replaced by '$theme'."
+  fi
 
   theme_file="$(dz::theme_file "$theme")"
 
@@ -161,17 +176,23 @@ dz::theme::apply_by_name() {
 }
 
 dz::theme::set() {
-  local theme="$1"
+  local requested_theme="$1"
+  local theme
 
-  [[ -n "$theme" ]] || {
+  [[ -n "$requested_theme" ]] || {
     dz::error "Theme name is required"
     return 1
   }
 
-  dz::is_valid_name "$theme" || {
-    dz::error "Invalid theme name: $theme"
+  dz::is_valid_name "$requested_theme" || {
+    dz::error "Invalid theme name: $requested_theme"
     return 1
   }
+
+  theme="$(dz::theme::resolve_name "$requested_theme")"
+  if [[ "$theme" != "$requested_theme" ]]; then
+    dz::warn "Theme '$requested_theme' was replaced by '$theme'."
+  fi
 
   dz::theme_exists "$theme" || {
     dz::error "Theme not found: $theme"
@@ -185,9 +206,12 @@ dz::theme::set() {
 }
 
 dz::theme::preview() {
-  local theme="$1"
+  local requested_theme="$1"
+  local theme
 
-  dz::theme::apply_by_name "$theme" || return 1
+  theme="$(dz::theme::resolve_name "$requested_theme")"
+
+  dz::theme::apply_by_name "$requested_theme" || return 1
   dz::success "Previewing theme: $theme"
   dz::info "Run 'dreamzsh reload' to return to saved theme, or 'dreamzsh theme set $theme' to keep it."
 }
