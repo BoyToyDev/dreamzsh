@@ -55,7 +55,7 @@ dreamzsh theme preview <TAB><TAB>
 
 ## 📼 Live demo
 
-![DreamZSH live demo](docs/assets/dreamzsh-demo.gif)
+![DreamZSH live demo](https://raw.githubusercontent.com/BoyToyDev/dreamzsh/master/docs/assets/dreamzsh-demo.gif)
 
 ## 🧩 Plugins
 
