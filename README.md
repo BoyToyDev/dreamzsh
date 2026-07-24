@@ -27,8 +27,7 @@ Plugins, themes, and portable profiles without manually editing shell config.
 - Keep configuration changes safe with atomic writes and verified imports.
 - Extend a small, readable Zsh codebase instead of learning a private format.
 
-> DreamZSH is currently developed and tested for Linux. macOS support is not a
-> current target.
+> DreamZSH is developed and tested for Linux and macOS.
 
 ## 🚀 Quick start
 

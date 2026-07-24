@@ -49,3 +49,29 @@ jobs:
 
       - name: Run installer smoke tests
         run: sh tests/install.sh
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Install test dependencies
+        run: brew install shellcheck
+
+      - name: Check shell syntax
+        run: |
+          sh -n install.sh
+          shellcheck install.sh tests/install.sh
+          zsh -n bin/dreamzsh completions/_dreamzsh dreamzsh.conf.example profiles/*.profile tests/*.zsh
+          find core plugins themes -type f \
+            \( -name '*.zsh' -o -name '*.zsh-theme' \) -print0 \
+            | xargs -0 -n1 zsh -n
+
+      - name: Run DreamZSH tests
+        run: |
+          zsh tests/lifecycle.zsh
+          zsh tests/smoke.zsh
+          zsh tests/registry.zsh
+          zsh tests/maintenance.zsh
+          sh tests/install.sh

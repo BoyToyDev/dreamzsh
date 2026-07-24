@@ -143,7 +143,7 @@ ensure_login_shell() {
   if is_zsh_shell "$updated_shell"; then
     success "Login shell changed to $updated_shell"
   else
-    warn "chsh completed, but the change could not be confirmed. Check with: getent passwd \"$(id -un)\""
+    warn "chsh completed, but the change could not be confirmed. Open a new terminal and check: echo \"\$SHELL\""
   fi
 }
 

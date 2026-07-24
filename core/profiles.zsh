@@ -438,6 +438,22 @@ dz::profile::manifest_value() {
   return 1
 }
 
+dz::profile::sha256() {
+  local file="$1"
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$file" | awk '{ print $1 }'
+  elif command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$file" | awk '{ print $1 }'
+  else
+    dz::error "SHA-256 support requires sha256sum or shasum"
+    return 1
+  fi
+}
+
+dz::profile::has_sha256() {
+  command -v sha256sum >/dev/null 2>&1 || command -v shasum >/dev/null 2>&1
+}
+
 dz::profile::safe_archive_members() {
   local archive="$1"
   local member part
@@ -567,8 +583,8 @@ dz::profile::export() {
     fi
   done
 
-  command -v sha256sum >/dev/null 2>&1 || {
-    dz::error "sha256sum is required to export profile format 1"
+  dz::profile::has_sha256 || {
+    dz::error "SHA-256 support requires sha256sum or shasum"
     return 1
   }
 
@@ -640,9 +656,17 @@ EOF
 
   (
     cd "$tmpdir" || exit 1
-    find manifest.txt profile themes plugins -type f -print0 \
-      | sort -z \
-      | xargs -0 sha256sum > checksums.sha256
+    local checksum_path checksum_hash
+    local -a checksum_files=(
+      manifest.txt
+      profile/**/*(.N)
+      themes/**/*(.N)
+      plugins/**/*(.N)
+    )
+    for checksum_path in "${checksum_files[@]}"; do
+      checksum_hash="$(dz::profile::sha256 "$checksum_path")" || exit 1
+      print -r -- "$checksum_hash  $checksum_path"
+    done > checksums.sha256
   ) || {
     rm -rf -- "$tmpdir"
     dz::error "Failed to create profile checksums"
@@ -789,6 +813,11 @@ dz::profile::import() {
     dz::error "Profile checksums are missing"
     return 1
   }
+  dz::profile::has_sha256 || {
+    rm -rf -- "$tmpdir"
+    dz::error "SHA-256 support requires sha256sum or shasum"
+    return 1
+  }
   while IFS=' ' read -r checksum_hash checksum_path; do
     checksum_path="${checksum_path# }"
     [[ "$checksum_path" != /* && "$checksum_path" != *"../"* ]] || {
@@ -796,12 +825,12 @@ dz::profile::import() {
       dz::error "Unsafe checksum path: $checksum_path"
       return 1
     }
+    [[ "$(dz::profile::sha256 "$tmpdir/$checksum_path")" == "$checksum_hash" ]] || {
+      rm -rf -- "$tmpdir"
+      dz::error "Profile checksum verification failed: $checksum_path"
+      return 1
+    }
   done < "$tmpdir/checksums.sha256"
-  (cd "$tmpdir" && sha256sum -c checksums.sha256 >/dev/null) || {
-    rm -rf -- "$tmpdir"
-    dz::error "Profile checksum verification failed"
-    return 1
-  }
 
   import_profile="$(dz::profile::manifest_value "$manifest_file" profile)"
   active_theme="$(dz::profile::manifest_value "$manifest_file" active_theme)"

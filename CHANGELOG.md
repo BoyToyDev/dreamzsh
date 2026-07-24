@@ -14,6 +14,7 @@ available in `CHANGELOG.ru.md`. New changes should first be recorded under
 
 - Added segmented Catppuccin, Tokyo Night, Dracula, and Gruvbox themes with
   Git state, command status, and time.
+- Added macOS support with native `shasum` checksums and a dedicated CI job.
 
 #### Changed
 

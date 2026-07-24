@@ -24,5 +24,12 @@ groot() {
 }
 
 gclean-merged() {
-  git branch --merged | grep -v '\*' | grep -v 'main' | grep -v 'master' | xargs -r git branch -d
+  local branch
+  local -a merged=()
+  while IFS= read -r branch; do
+    branch="${branch#"${branch%%[![:space:]]*}"}"
+    [[ -z "$branch" || "$branch" == \** || "$branch" == main || "$branch" == master ]] && continue
+    merged+=("$branch")
+  done < <(git branch --merged)
+  (( ${#merged[@]} > 0 )) && git branch -d -- "${merged[@]}"
 }
