@@ -8,6 +8,8 @@ available in `CHANGELOG.ru.md`. New changes should first be recorded under
 
 ## Unreleased
 
+## 0.3.0 - 2026-07-24
+
 ### 2026-07-24
 
 #### Added
@@ -15,6 +17,11 @@ available in `CHANGELOG.ru.md`. New changes should first be recorded under
 - Added segmented Catppuccin, Tokyo Night, Dracula, and Gruvbox themes with
   Git state, command status, and time.
 - Added macOS support with native `shasum` checksums and a dedicated CI job.
+- Added complete profile archive inventories and transaction rollback during
+  import.
+- Added validated, user-data-only backups with rollback-safe restoration.
+- Added consistent command-specific help and `ZDOTDIR` support to installation
+  diagnostics.
 
 #### Changed
 
@@ -22,6 +29,12 @@ available in `CHANGELOG.ru.md`. New changes should first be recorded under
   compatibility migrations to `dream-smart` and `dream-mini`.
 - Updates now adopt identical untracked files that became part of DreamZSH and
   preserve differing local files with a clear conflict report.
+- Plugin metadata is now parsed strictly as data instead of sourced as shell
+  code.
+- Plugin dependency checks now support enabling a dependency and its consumer
+  in one command.
+- Statistics and completions now match visible themes and reference-backed
+  catalog plugins.
 
 ### 2026-07-23
 

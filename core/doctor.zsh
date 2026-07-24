@@ -22,23 +22,39 @@ dz::doctor::check_item() {
 dz::doctor::run() {
   local ok=1
   local plugin
-  local zshrc_file="${HOME}/.zshrc"
+  local zshrc_file="${ZDOTDIR:-$HOME}/.zshrc"
   local block_start_count=0
   local block_end_count=0
 
   dz::info "DreamZSH doctor"
 
-  [[ -d "$DREAMZSH_DIR" ]]
-  dz::doctor::check_item "$?" "DreamZSH directory exists: $DREAMZSH_DIR"
+  if [[ -d "$DREAMZSH_DIR" ]]; then
+    dz::doctor::check_item 0 "DreamZSH directory exists: $DREAMZSH_DIR"
+  else
+    dz::doctor::check_item 1 "DreamZSH directory exists: $DREAMZSH_DIR"
+    ok=0
+  fi
 
-  [[ -f "$DREAMZSH_CONFIG_FILE" ]]
-  dz::doctor::check_item "$?" "Config file exists: $DREAMZSH_CONFIG_FILE"
+  if [[ -f "$DREAMZSH_CONFIG_FILE" ]]; then
+    dz::doctor::check_item 0 "Config file exists: $DREAMZSH_CONFIG_FILE"
+  else
+    dz::doctor::check_item 1 "Config file exists: $DREAMZSH_CONFIG_FILE"
+    ok=0
+  fi
 
-  [[ -d "$DREAMZSH_THEMES_DIR" ]]
-  dz::doctor::check_item "$?" "Themes directory exists: $DREAMZSH_THEMES_DIR"
+  if [[ -d "$DREAMZSH_THEMES_DIR" ]]; then
+    dz::doctor::check_item 0 "Themes directory exists: $DREAMZSH_THEMES_DIR"
+  else
+    dz::doctor::check_item 1 "Themes directory exists: $DREAMZSH_THEMES_DIR"
+    ok=0
+  fi
 
-  [[ -d "$DREAMZSH_PLUGINS_DIR" ]]
-  dz::doctor::check_item "$?" "Plugins directory exists: $DREAMZSH_PLUGINS_DIR"
+  if [[ -d "$DREAMZSH_PLUGINS_DIR" ]]; then
+    dz::doctor::check_item 0 "Plugins directory exists: $DREAMZSH_PLUGINS_DIR"
+  else
+    dz::doctor::check_item 1 "Plugins directory exists: $DREAMZSH_PLUGINS_DIR"
+    ok=0
+  fi
 
   if dz::theme_exists "$DREAMZSH_THEME"; then
     dz::success "Active theme exists: $DREAMZSH_THEME"
@@ -104,9 +120,10 @@ dz::doctor::run() {
 
 dz::doctor::fix() {
   local fixed=0
-  local zshrc_file="${HOME}/.zshrc"
+  local zshrc_file="${ZDOTDIR:-$HOME}/.zshrc"
   local block_start="# >>> dreamzsh >>>"
   local block_end="# <<< dreamzsh <<<"
+  local repair_failed=0
 
   dz::info "Doctor --fix: repairing..."
 
@@ -145,17 +162,28 @@ dz::doctor::fix() {
     }
   fi
 
+  if [[ -L "$zshrc_file" ]]; then
+    zshrc_file="${zshrc_file:A}"
+  fi
+  if [[ ! -f "$zshrc_file" ]]; then
+    mkdir -p "${zshrc_file:h}" || return 1
+    : > "$zshrc_file" || return 1
+  fi
+
   if [[ -f "$zshrc_file" ]]; then
     local start_count end_count
     start_count=$(grep -cF "$block_start" "$zshrc_file" 2>/dev/null || true)
     end_count=$(grep -cF "$block_end" "$zshrc_file" 2>/dev/null || true)
 
-    if (( start_count > 1 || end_count > 1 || start_count != end_count )); then
+    if (( start_count != end_count )); then
+      dz::error "Cannot safely repair an incomplete DreamZSH block in $zshrc_file"
+      repair_failed=1
+    elif (( start_count != 1 )); then
       local tmp_file
-      tmp_file="$(mktemp)" || return 1
+      tmp_file="$(mktemp "${zshrc_file}.dreamzsh.XXXXXX")" || return 1
 
       local in_block=0
-      while IFS= read -r line; do
+      while IFS= read -r line || [[ -n "$line" ]]; do
         if [[ "$line" == "$block_start" ]]; then
           (( in_block > 0 )) && continue
           in_block=1
@@ -185,7 +213,8 @@ fi
 EOBLOCK
       print -r -- "$block_end" >> "$tmp_file"
 
-      mv "$tmp_file" "$zshrc_file" && {
+      chmod --reference="$zshrc_file" "$tmp_file" 2>/dev/null || chmod 600 "$tmp_file" 2>/dev/null || true
+      mv -f -- "$tmp_file" "$zshrc_file" && {
         dz::success "Fixed broken DreamZSH block in .zshrc"
         (( fixed++ ))
       }
@@ -218,7 +247,10 @@ EOBLOCK
     }
   fi
 
-  if (( fixed > 0 )); then
+  if (( repair_failed )); then
+    dz::error "Doctor --fix finished with an unresolved .zshrc problem."
+    return 1
+  elif (( fixed > 0 )); then
     dz::success "Doctor --fix: $fixed issue(s) repaired."
   else
     dz::success "Doctor --fix: nothing to fix."

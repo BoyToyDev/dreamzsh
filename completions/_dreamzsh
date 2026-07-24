@@ -68,7 +68,7 @@ backup_subcommands=(
 
 plugins=(${(f)"$(${DREAMZSH_DIR:-$HOME/.dreamzsh}/bin/dreamzsh plugin list 2>/dev/null | awk 'NR>2 {print $1}')"})
 external_plugins=("${DREAMZSH_CUSTOM_PLUGINS_DIR:-${DREAMZSH_DIR:-$HOME/.dreamzsh}/custom/plugins}"/*/source.meta(N:h:t))
-registry_plugins=("${DREAMZSH_PLUGIN_REPOS_DIR:-${DREAMZSH_DIR:-$HOME/.dreamzsh}/custom/plugin-repos}"/*/plugins/*/plugin.zsh(N:h:t))
+registry_plugins=("${DREAMZSH_PLUGIN_REPOS_DIR:-${DREAMZSH_DIR:-$HOME/.dreamzsh}/custom/plugin-repos}"/*/**/plugin.meta(N:h:t))
 all_plugins=("${plugins[@]}" "${registry_plugins[@]}")
 plugin_repositories=(official "${DREAMZSH_PLUGIN_REPOS_DIR:-${DREAMZSH_DIR:-$HOME/.dreamzsh}/custom/plugin-repos}"/*(N:t))
 themes=(${(f)"$(${DREAMZSH_DIR:-$HOME/.dreamzsh}/bin/dreamzsh theme list 2>/dev/null)"})

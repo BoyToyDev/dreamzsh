@@ -22,8 +22,6 @@ source "${DREAMZSH_DIR}/core/stats.zsh" || exit 1
 
 dz::config::load || exit 1
 
-DREAMZSH_VERSION="0.2.0"
-
 command_name="${1:-help}"
 shift || true
 
@@ -38,21 +36,36 @@ case "$command_name" in
     dz::help::command "${1:-}" "${2:-}" || exit 1
     ;;
   version|-v|--version)
+    if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+      dz::help::command version
+      exit 0
+    fi
+    (( $# == 0 )) || { dz::usage_error "Unknown version option: $1" "Usage: dreamzsh version"; exit 1; }
     print -r -- "DreamZSH $DREAMZSH_VERSION"
     ;;
   status)
+    if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+      dz::help::command status
+      exit 0
+    fi
+    (( $# == 0 )) || { dz::usage_error "Unknown status option: $1" "Usage: dreamzsh status"; exit 1; }
     dz::status::run
     ;;
   config)
+    if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+      dz::help::command config
+      exit 0
+    fi
+    (( $# == 0 )) || { dz::usage_error "Unknown config option: $1" "Usage: dreamzsh config"; exit 1; }
     dz::config::print
     ;;
   doctor)
-    if [[ "${1:-}" == "--fix" ]]; then
-      shift
-      dz::doctor::fix || exit 1
-    else
-      dz::doctor::run || exit 1
-    fi
+    case "${1:-}" in
+      -h|--help) dz::help::command doctor; exit 0 ;;
+      --fix) shift; (( $# == 0 )) || { dz::usage_error "Unknown doctor option: $1" "Usage: dreamzsh doctor [--fix]"; exit 1; }; dz::doctor::fix || exit 1 ;;
+      "") dz::doctor::run || exit 1 ;;
+      *) dz::usage_error "Unknown doctor option: $1" "Usage: dreamzsh doctor [--fix]"; exit 1 ;;
+    esac
     ;;
   reload)
     if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
@@ -103,6 +116,11 @@ case "$command_name" in
     (( $? == 0 )) || exit 1
     ;;
   stats)
+    if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+      dz::help::command stats
+      exit 0
+    fi
+    (( $# == 0 )) || { dz::usage_error "Unknown stats option: $1" "Usage: dreamzsh stats"; exit 1; }
     dz::stats::run
     ;;
   plugin)

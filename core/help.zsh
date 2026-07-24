@@ -18,6 +18,7 @@ Commands:
   plugin    Manage plugins
   theme     Manage themes
   profile   Manage profiles
+  backup    Manage backups
   status    Show current DreamZSH status
   config    Show current configuration
   doctor    Check installation and configuration
@@ -64,7 +65,13 @@ Profile commands:
   dreamzsh profile apply <name>
   dreamzsh profile current
   dreamzsh profile export <name> [output.tar.gz]
-  dreamzsh profile import <archive.tar.gz> [--apply]
+  dreamzsh profile import <archive.tar.gz> [--apply] [--overwrite] [--yes]
+
+Backup commands:
+  dreamzsh backup create [--all|--only <items>]
+  dreamzsh backup list
+  dreamzsh backup restore <archive>
+  dreamzsh backup clean [--all]
 
 Examples:
   dreamzsh status
@@ -72,9 +79,9 @@ Examples:
   dreamzsh plugin enable git history
   dreamzsh theme create my-theme
   dreamzsh theme preview my-theme
-  dreamzsh theme set pro
+  dreamzsh theme set tokyo-night
   dreamzsh profile info default
-  dreamzsh profile apply minimal
+  dreamzsh profile apply default
   dreamzsh doctor
 TXT
 }
@@ -179,6 +186,26 @@ dz::help::command() {
       theme)   dz::help::theme ;;
       profile) dz::help::profile ;;
       backup)  dz::help::backup ;;
+      status)
+        print -r -- "Usage: dreamzsh status"
+        print -r -- "Show the active configuration and backup summary."
+        ;;
+      config)
+        print -r -- "Usage: dreamzsh config"
+        print -r -- "Print the current DreamZSH configuration."
+        ;;
+      doctor)
+        print -r -- "Usage: dreamzsh doctor [--fix]"
+        print -r -- "Check the installation or repair safe, well-defined issues."
+        ;;
+      stats)
+        print -r -- "Usage: dreamzsh stats"
+        print -r -- "Show versions, startup time, and resource counts."
+        ;;
+      version)
+        print -r -- "Usage: dreamzsh version"
+        print -r -- "Show the installed DreamZSH version."
+        ;;
       reload)  dz::help::reload ;;
       update)  dz::help::update ;;
       uninstall) dz::help::uninstall ;;

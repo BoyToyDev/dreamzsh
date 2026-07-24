@@ -8,6 +8,27 @@ __DREAMZSH_STATS_LOADED=1
 source "${DREAMZSH_DIR}/core/utils.zsh" || return 1
 source "${DREAMZSH_DIR}/core/config.zsh" || return 1
 
+dz::stats::theme_count() {
+  local file name
+  local -A seen=()
+  for file in "$DREAMZSH_CUSTOM_THEMES_DIR"/*.zsh-theme(N) "$DREAMZSH_THEMES_DIR"/*.zsh-theme(N); do
+    name="${file:t:r}"
+    [[ "$name" == dream || "$name" == work || "$name" == pro ]] && continue
+    seen[$name]=1
+  done
+  print -r -- "${#seen}"
+}
+
+dz::stats::profile_count() {
+  local file name
+  local -A seen=()
+  for file in "$DREAMZSH_CUSTOM_PROFILES_DIR"/*.profile(N) "$DREAMZSH_PROFILES_DIR"/*.profile(N); do
+    name="${file:t:r}"
+    seen[$name]=1
+  done
+  print -r -- "${#seen}"
+}
+
 dz::stats::run() {
   local startup="${__DREAMZSH_STARTUP_SECONDS:-}"
   local startup_display="unavailable"
@@ -22,9 +43,10 @@ dz::stats::run() {
     startup_display="$(printf '%.0f ms' "$(( startup * 1000.0 ))")"
   fi
 
-  theme_count=$(( $(find "$DREAMZSH_THEMES_DIR" -maxdepth 1 -name '*.zsh-theme' 2>/dev/null | wc -l) + $(find "$DREAMZSH_CUSTOM_THEMES_DIR" -maxdepth 1 -name '*.zsh-theme' 2>/dev/null | wc -l) ))
-  profile_count=$(( $(find "$DREAMZSH_PROFILES_DIR" -maxdepth 1 -name '*.profile' 2>/dev/null | wc -l) + $(find "$DREAMZSH_CUSTOM_PROFILES_DIR" -maxdepth 1 -name '*.profile' 2>/dev/null | wc -l) ))
-  backup_count=$(find "${DREAMZSH_BACKUPS_DIR:-$DREAMZSH_DIR/backups}" -maxdepth 1 -name '*.tar.gz' 2>/dev/null | wc -l | tr -d ' ')
+  theme_count="$(dz::stats::theme_count)"
+  profile_count="$(dz::stats::profile_count)"
+  local -a backup_files=("${DREAMZSH_BACKUPS_DIR:-$DREAMZSH_DIR/backups}"/*.tar.gz(N))
+  backup_count="${#backup_files[@]}"
 
   if (( $+commands[du] )); then
     dir_size="$(du -sh "$DREAMZSH_DIR" 2>/dev/null | cut -f1)"

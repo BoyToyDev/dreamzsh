@@ -6,6 +6,7 @@ fi
 __DREAMZSH_UTILS_LOADED=1
 
 : "${DREAMZSH_DIR:=${HOME}/.dreamzsh}"
+DREAMZSH_VERSION="0.3.0"
 
 : "${DREAMZSH_CONFIG_FILE:=$DREAMZSH_DIR/dreamzsh.conf}"
 : "${DREAMZSH_THEMES_DIR:=$DREAMZSH_DIR/themes}"
@@ -163,6 +164,30 @@ dz::unknown_command() {
 dz::is_valid_name() {
   local name="$1"
   [[ "$name" =~ '^[a-zA-Z0-9._-]+$' ]]
+}
+
+dz::meta_value() {
+  local file="$1"
+  local wanted="$2"
+  local line value
+
+  [[ -f "$file" && "$wanted" =~ '^[A-Za-z_][A-Za-z0-9_]*$' ]] || return 1
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    [[ "$line" == "$wanted="* ]] || continue
+    value="${line#*=}"
+    if [[ "$value" == \"*\" && "$value" == *\" ]]; then
+      value="${value#\"}"
+      value="${value%\"}"
+    elif [[ "$value" == \'*\' && "$value" == *\' ]]; then
+      value="${value#\'}"
+      value="${value%\'}"
+    fi
+    print -r -- "$value"
+    return 0
+  done < "$file"
+
+  return 1
 }
 
 dz::ensure_dir() {

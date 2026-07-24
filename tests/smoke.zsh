@@ -50,13 +50,19 @@ export HOME="$test_home"
 export DREAMZSH_DIR="$install_dir"
 
 output="$(run_cli version)"
-assert_contains "$output" "DreamZSH 0.2.0" "version command"
+assert_contains "$output" "DreamZSH 0.3.0" "version command"
 
 output="$(run_cli help)"
 assert_contains "$output" "Usage:" "main help"
+assert_contains "$output" "backup    Manage backups" "backup in main help"
 
 output="$(run_cli plugin enable --help)"
 assert_contains "$output" "Usage: dreamzsh plugin enable" "subcommand --help"
+
+for help_command in status config doctor stats version; do
+  output="$(run_cli "$help_command" --help)"
+  assert_contains "$output" "Usage: dreamzsh $help_command" "$help_command --help"
+done
 
 output="$(run_cli help profile import)"
 assert_contains "$output" "Usage: dreamzsh profile import" "help topic routing"
@@ -85,12 +91,25 @@ dz::colors::enable
   || fail "color prompt sequences were truncated"
 output="$(run_cli stats)"
 assert_contains "$output" "42 ms" "startup statistics"
-assert_contains "$output" "0.2.0" "stats DreamZSH version"
+assert_contains "$output" "0.3.0" "stats DreamZSH version"
 assert_contains "$output" "$ZSH_VERSION" "stats Zsh version"
 assert_contains "$output" "3 enabled" "stats plugin count"
+assert_contains "$output" "10 available" "stats visible theme count"
 [[ "$output" != *'%F{'* && "$output" != *'%B'* && "$output" != *'%f'* ]] \
   || fail "stats exposed raw Zsh prompt escapes"
 pass "stats color rendering"
+
+mkdir -p "$install_dir/custom/plugins/safe-meta"
+print -r -- '# safe metadata fixture' > "$install_dir/custom/plugins/safe-meta/plugin.zsh"
+cat > "$install_dir/custom/plugins/safe-meta/plugin.meta" <<EOF
+plugin_name="Safe metadata"
+description="\$(print executed > "$test_root/meta-executed")"
+requires_plugins=""
+requires_commands=""
+EOF
+run_cli plugin info safe-meta >/dev/null
+[[ ! -e "$test_root/meta-executed" ]] || fail "plugin metadata was executed"
+pass "plugin metadata is parsed without execution"
 
 run_cli plugin disable history >/dev/null
 run_cli plugin enable history >/dev/null
@@ -99,6 +118,18 @@ typeset -a temporary_configs
 temporary_configs=("$install_dir"/.dreamzsh.conf.tmp.*(N))
 (( ${#temporary_configs[@]} == 0 )) || fail "temporary config files were left behind"
 pass "atomic config save"
+
+for dependency_plugin in dependency-base dependency-child; do
+  mkdir -p "$install_dir/custom/plugins/$dependency_plugin"
+  print -r -- '# dependency fixture' > "$install_dir/custom/plugins/$dependency_plugin/plugin.zsh"
+done
+print -r -- 'requires_plugins=""' > "$install_dir/custom/plugins/dependency-base/plugin.meta"
+print -r -- 'requires_plugins="dependency-base"' > "$install_dir/custom/plugins/dependency-child/plugin.meta"
+run_cli plugin enable dependency-base dependency-child >/dev/null
+grep -Fq 'dependency-child' "$install_dir/dreamzsh.conf" \
+  || fail "batch dependency enable did not save dependent plugin"
+run_cli plugin disable dependency-base dependency-child >/dev/null
+pass "batch plugin enable resolves dependencies"
 
 run_cli profile apply default >/dev/null
 grep -Fq 'DREAMZSH_PROFILE="default"' "$install_dir/dreamzsh.conf" \
@@ -205,6 +236,17 @@ tar -xOzf "$archive" manifest.txt | grep -Fq 'profile=My_super_prof' \
 tar -tzf "$archive" | grep -Fq 'plugins/test-plugin/source/test-plugin.plugin.zsh' \
   || fail "external plugin snapshot was not packaged"
 pass "self-contained profile export"
+
+tampered_dir="$test_root/tampered-profile"
+mkdir -p "$tampered_dir"
+tar -xzf "$archive" -C "$tampered_dir"
+: > "$tampered_dir/checksums.sha256"
+tampered_archive="$test_root/tampered-profile.tar.gz"
+(cd "$tampered_dir" && tar -czf "$tampered_archive" manifest.txt checksums.sha256 profile themes plugins)
+if "$install_dir/bin/dreamzsh" profile import "$tampered_archive" --yes >/dev/null 2>&1; then
+  fail "profile import accepted an empty checksum inventory"
+fi
+pass "profile import rejects incomplete checksum inventory"
 
 saved_archive="$test_root/Saved_copy.tar.gz"
 run_cli profile export Saved_copy --from default --output "$saved_archive" >/dev/null

@@ -243,22 +243,7 @@ dz::registry::plugin_dirs() {
 }
 
 dz::registry::meta_value() {
-  local file="$1" wanted="$2" line key value
-  [[ -f "$file" ]] || return 1
-  while IFS= read -r line; do
-    [[ "$line" == "$wanted="* ]] || continue
-    value="${line#*=}"
-    if [[ "$value" == \"*\" ]]; then
-      value="${value#\"}"
-      value="${value%\"}"
-    elif [[ "$value" == \'*\' ]]; then
-      value="${value#\'}"
-      value="${value%\'}"
-    fi
-    print -r -- "$value"
-    return 0
-  done < "$file"
-  return 1
+  dz::meta_value "$1" "$2"
 }
 
 dz::registry::find_plugin() {

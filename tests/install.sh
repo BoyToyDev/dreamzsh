@@ -76,6 +76,17 @@ block_count=$(grep -c '^# >>> dreamzsh >>>$' "$repeat_home/.zshrc")
 [ "$block_count" -eq 1 ] || fail "repeated install duplicated the .zshrc block"
 pass "repeated install is idempotent"
 
+zdot_home="$TEST_ROOT/zdot-home"
+zdot_dir="$TEST_ROOT/zdot-config"
+make_repo_fixture "$zdot_home"
+mkdir -p "$zdot_dir"
+PATH="$MOCK_BIN:$SYSTEM_PATH" HOME="$zdot_home" ZDOTDIR="$zdot_dir" \
+  sh "$REPO_ROOT/install.sh" </dev/null >/dev/null 2>&1
+grep -Fq '# >>> dreamzsh >>>' "$zdot_dir/.zshrc" \
+  || fail "installer ignored ZDOTDIR"
+[ ! -e "$zdot_home/.zshrc" ] || fail "installer wrote HOME/.zshrc while ZDOTDIR was set"
+pass "installer respects ZDOTDIR"
+
 missing_bin="$TEST_ROOT/missing-bin"
 missing_home="$TEST_ROOT/missing-home"
 mkdir -p "$missing_bin" "$missing_home"

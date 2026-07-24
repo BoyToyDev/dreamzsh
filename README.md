@@ -36,8 +36,8 @@ sh -c "$(curl -fsSL https://raw.githubusercontent.com/BoyToyDev/dreamzsh/master/
 ```
 
 The interactive installer checks for Zsh, can install it through a supported
-Linux package manager, and can offer to make it your login shell. Start a new
-shell after installation:
+package manager on Linux or macOS, and can offer to make it your login shell.
+Start a new shell after installation:
 
 ```zsh
 exec zsh
@@ -127,7 +127,21 @@ dreamzsh profile import ./My_super_profile.tar.gz
 dreamzsh profile apply My_super_profile
 ```
 
-Imports validate paths and SHA-256 checksums before changing local state.
+Imports validate a complete file inventory and SHA-256 checksums before changing
+local state, and roll the whole import back if installation fails. Profile
+packages contain executable themes and plugins, so only import packages from
+people you trust.
+
+## 💾 Backups
+
+Backups contain configuration and user-managed resources under `custom/`;
+framework files are never restored over the Git checkout.
+
+```zsh
+dreamzsh backup create --all
+dreamzsh backup list
+dreamzsh backup restore <archive>
+```
 
 ## 🗺️ Command map
 
@@ -140,6 +154,7 @@ Imports validate paths and SHA-256 checksums before changing local state.
 | Enable an installed plugin | `dreamzsh plugin enable <name>` |
 | Preview a theme | `dreamzsh theme preview <name>` |
 | Export a portable profile | `dreamzsh profile export <name>` |
+| Back up user configuration | `dreamzsh backup create --all` |
 | Reload the current shell | `dreamzsh reload` |
 | Show startup statistics | `dreamzsh stats` |
 | Update DreamZSH | `dreamzsh update` |
@@ -188,7 +203,7 @@ commands through `requires_plugins` and `requires_commands`.
 
 DreamZSH uses isolated CLI smoke tests, lifecycle and dependency tests, registry
 tests with local Git fixtures, update and uninstall tests, installer tests, Zsh
-syntax checks, and Linux CI.
+syntax checks, and Linux and macOS CI.
 Configuration writes, repository refreshes, plugin updates, and profile imports
 are designed to avoid partial state.
 

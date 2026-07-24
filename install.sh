@@ -4,7 +4,7 @@ set -eu
 REPO_URL="https://github.com/BoyToyDev/dreamzsh.git"
 REPO_BRANCH="master"
 INSTALL_DIR="${HOME}/.dreamzsh"
-ZSHRC="${HOME}/.zshrc"
+ZSHRC="${ZDOTDIR:-${HOME}}/.zshrc"
 BLOCK_START="# >>> dreamzsh >>>"
 BLOCK_END="# <<< dreamzsh <<<"
 LOGIN_SHELL_IS_ZSH=0
@@ -163,6 +163,7 @@ ensure_repo() {
 }
 
 ensure_zshrc() {
+  [ -d "$(dirname "$ZSHRC")" ] || mkdir -p "$(dirname "$ZSHRC")"
   [ -f "$ZSHRC" ] || : > "$ZSHRC"
 }
 

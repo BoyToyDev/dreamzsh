@@ -40,7 +40,11 @@ dz::plugin::list() {
 
     meta_file="$(dz::plugin_meta_file "$name")"
     if [[ -f "$meta_file" ]]; then
-      source "$meta_file" 2>/dev/null
+      plugin_name="$(dz::meta_value "$meta_file" plugin_name 2>/dev/null)"
+      description="$(dz::meta_value "$meta_file" description 2>/dev/null)"
+      version="$(dz::meta_value "$meta_file" version 2>/dev/null)"
+      author="$(dz::meta_value "$meta_file" author 2>/dev/null)"
+      tags="$(dz::meta_value "$meta_file" tags 2>/dev/null)"
     fi
 
     [[ -n "$description" ]] || description="-"
@@ -99,7 +103,14 @@ dz::plugin::info() {
 
   meta_file="$(dz::plugin_meta_file "$name")"
   if [[ -f "$meta_file" ]]; then
-    source "$meta_file" 2>/dev/null
+    plugin_name="$(dz::meta_value "$meta_file" plugin_name 2>/dev/null)"
+    description="$(dz::meta_value "$meta_file" description 2>/dev/null)"
+    version="$(dz::meta_value "$meta_file" version 2>/dev/null)"
+    author="$(dz::meta_value "$meta_file" author 2>/dev/null)"
+    tags="$(dz::meta_value "$meta_file" tags 2>/dev/null)"
+    requires="$(dz::meta_value "$meta_file" requires 2>/dev/null)"
+    requires_plugins="$(dz::meta_value "$meta_file" requires_plugins 2>/dev/null)"
+    requires_commands="$(dz::meta_value "$meta_file" requires_commands 2>/dev/null)"
     [[ -n "$plugin_name" ]] && print -r -- "Title: $plugin_name"
     [[ -n "$description" ]] && print -r -- "Description: $description"
     [[ -n "$version" ]] && print -r -- "Version: $version"
@@ -638,8 +649,13 @@ dz::plugin::enable() {
 
   local dep
   for name in "${normalized[@]}"; do
-    local -a unmet_plugins unmet_commands
-    unmet_plugins=($(dz::plugin::check_plugin_deps "$name"))
+    local -a required_plugins unmet_plugins unmet_commands
+    required_plugins=($(dz::plugin::get_requirements "$name" plugins))
+    for dep in "${required_plugins[@]}"; do
+      if ! dz::plugin_exists "$dep" || ! dz::array_contains "$dep" "${updated[@]}"; then
+        unmet_plugins+=("$dep")
+      fi
+    done
     if (( ${#unmet_plugins[@]} > 0 )); then
       dz::error "Plugin '$name' requires enabled plugins: ${unmet_plugins[*]}"
       return 1
@@ -708,7 +724,9 @@ dz::plugin::get_requirements() {
 
   meta_file="$(dz::plugin_meta_file "$name")"
   if [[ -f "$meta_file" ]]; then
-    source "$meta_file" 2>/dev/null
+    requires="$(dz::meta_value "$meta_file" requires 2>/dev/null)"
+    requires_plugins="$(dz::meta_value "$meta_file" requires_plugins 2>/dev/null)"
+    requires_commands="$(dz::meta_value "$meta_file" requires_commands 2>/dev/null)"
   fi
 
   case "$requirement_type" in

@@ -161,6 +161,9 @@ output="$(dz::registry::plugin_info catalog-test)" || fail "remote plugin info"
 [[ "$output" == *"Description: Registry test plugin"* ]] || fail "remote metadata was not read"
 output="$(run_cli plugin info catalog-test --repo official)" || fail "CLI remote info routing"
 [[ "$output" == *"Repository: official"* ]] || fail "CLI did not show remote plugin info"
+completion_plugins=("$DREAMZSH_PLUGIN_REPOS_DIR"/*/**/plugin.meta(N:h:t))
+[[ " ${completion_plugins[*]} " == *" reference-test "* ]] \
+  || fail "reference-backed plugin was missing from completion discovery"
 pass "official repository browse and metadata"
 
 if output="$(run_cli plugin install missing-command-test 2>&1)"; then

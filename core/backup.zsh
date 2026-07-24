@@ -15,9 +15,9 @@ dz::backup::ensure_dir() {
 }
 
 dz::backup::create() {
-  local archive_name archive_path
+  local archive_name archive_path tmpdir item source
   local -a components=()
-  local -a tar_items=()
+  local -a staged_files=()
   local answer
 
   while (( $# > 0 )); do
@@ -27,8 +27,16 @@ dz::backup::create() {
         shift
         ;;
       --only)
+        (( $# >= 2 )) || {
+          dz::error "--only requires a comma-separated component list"
+          return 1
+        }
         shift
         for item in ${(s:,:)1}; do
+          [[ "$item" == config || "$item" == profiles || "$item" == plugins || "$item" == themes ]] || {
+            dz::error "Unknown backup component: $item"
+            return 1
+          }
           components+=("$item")
         done
         shift
@@ -67,35 +75,89 @@ dz::backup::create() {
 
   dz::backup::ensure_dir || return 1
 
+  tmpdir="$(mktemp -d)" || {
+    dz::error "Failed to create backup staging directory"
+    return 1
+  }
+
   for item in "${components[@]}"; do
     case "$item" in
-      config) [[ -f "$DREAMZSH_CONFIG_FILE" ]] && tar_items+=("dreamzsh.conf") ;;
+      config)
+        if [[ -f "$DREAMZSH_CONFIG_FILE" ]]; then
+          cp -- "$DREAMZSH_CONFIG_FILE" "$tmpdir/dreamzsh.conf" || {
+            rm -rf -- "$tmpdir"
+            dz::error "Failed to stage DreamZSH config"
+            return 1
+          }
+        fi
+        ;;
       profiles)
-        [[ -d "$DREAMZSH_PROFILES_DIR" ]] && tar_items+=("profiles")
-        [[ -d "$DREAMZSH_CUSTOM_PROFILES_DIR" ]] && tar_items+=("custom/profiles")
+        source="$DREAMZSH_CUSTOM_PROFILES_DIR"
+        if [[ -d "$source" ]]; then
+          mkdir -p "$tmpdir/custom" \
+            && cp -R -- "$source" "$tmpdir/custom/profiles" || {
+              rm -rf -- "$tmpdir"
+              dz::error "Failed to stage custom profiles"
+              return 1
+            }
+        fi
         ;;
       plugins)
-        [[ -d "$DREAMZSH_PLUGINS_DIR" ]] && tar_items+=("plugins")
-        [[ -d "$DREAMZSH_CUSTOM_PLUGINS_DIR" ]] && tar_items+=("custom/plugins")
-        [[ -f "$DREAMZSH_PLUGIN_REPOS_FILE" ]] && tar_items+=("custom/plugin-repos.conf")
+        source="$DREAMZSH_CUSTOM_PLUGINS_DIR"
+        if [[ -d "$source" ]]; then
+          mkdir -p "$tmpdir/custom" \
+            && cp -R -- "$source" "$tmpdir/custom/plugins" || {
+              rm -rf -- "$tmpdir"
+              dz::error "Failed to stage custom plugins"
+              return 1
+            }
+        fi
+        if [[ -f "$DREAMZSH_PLUGIN_REPOS_FILE" ]]; then
+          mkdir -p "$tmpdir/custom" \
+            && cp -- "$DREAMZSH_PLUGIN_REPOS_FILE" "$tmpdir/custom/plugin-repos.conf" || {
+              rm -rf -- "$tmpdir"
+              dz::error "Failed to stage plugin repository config"
+              return 1
+            }
+        fi
         ;;
       themes)
-        [[ -d "$DREAMZSH_THEMES_DIR" ]] && tar_items+=("themes")
-        [[ -d "$DREAMZSH_CUSTOM_THEMES_DIR" ]] && tar_items+=("custom/themes")
+        source="$DREAMZSH_CUSTOM_THEMES_DIR"
+        if [[ -d "$source" ]]; then
+          mkdir -p "$tmpdir/custom" \
+            && cp -R -- "$source" "$tmpdir/custom/themes" || {
+              rm -rf -- "$tmpdir"
+              dz::error "Failed to stage custom themes"
+              return 1
+            }
+        fi
         ;;
     esac
   done
 
+  staged_files=("$tmpdir"/**/*(.N))
+  if (( ${#staged_files[@]} == 0 )); then
+    rm -rf -- "$tmpdir"
+    dz::error "Selected backup components do not contain any files"
+    return 1
+  fi
+
   archive_name="backup-$(date +%F_%H-%M-%S).tar.gz"
   archive_path="$DREAMZSH_BACKUPS_DIR/$archive_name"
+  [[ ! -e "$archive_path" ]] || {
+    archive_name="backup-$(date +%F_%H-%M-%S)-$$.tar.gz"
+    archive_path="$DREAMZSH_BACKUPS_DIR/$archive_name"
+  }
 
   (
-    cd "$DREAMZSH_DIR"
-    tar -czf "$archive_path" "${tar_items[@]}"
+    cd "$tmpdir" || exit 1
+    tar -czf "$archive_path" .
   ) || {
+    rm -rf -- "$tmpdir"
     dz::error "Failed to create backup archive."
     return 1
   }
+  rm -rf -- "$tmpdir"
 
   dz::success "Backup created: $archive_name"
 }
@@ -114,10 +176,17 @@ dz::backup::list() {
 
 dz::backup::restore() {
   local archive_name="$1"
-  local archive_path confirm
+  local archive_path confirm tmpdir line member part type source destination staged old
+  local config_destination
+  local -a sources=() destinations=() installed_destinations=() old_destinations=()
 
   [[ -n "$archive_name" ]] || {
     dz::error "Missing backup archive name."
+    return 1
+  }
+
+  [[ "${archive_name:t}" == "$archive_name" && "$archive_name" == *.tar.gz ]] || {
+    dz::error "Invalid backup archive name: $archive_name"
     return 1
   }
 
@@ -134,10 +203,106 @@ dz::backup::restore() {
     return 1
   }
 
-  tar -xzf "$archive_path" -C "$DREAMZSH_DIR" || {
-    dz::error "Failed to restore backup."
+  while IFS= read -r member; do
+    [[ -n "$member" && "$member" != /* ]] || {
+      dz::error "Backup contains an unsafe path"
+      return 1
+    }
+    for part in ${(s:/:)member}; do
+      [[ "$part" != ".." ]] || {
+        dz::error "Backup contains an unsafe path: $member"
+        return 1
+      }
+    done
+  done < <(tar -tzf "$archive_path" 2>/dev/null) || {
+    dz::error "Backup archive is invalid"
     return 1
   }
+
+  while IFS= read -r line; do
+    type="${line[1]}"
+    [[ "$type" == "-" || "$type" == "d" ]] || {
+      dz::error "Backup contains links or unsupported file types"
+      return 1
+    }
+  done < <(LC_ALL=C tar -tvzf "$archive_path" 2>/dev/null) || {
+    dz::error "Backup archive is invalid"
+    return 1
+  }
+
+  tmpdir="$(mktemp -d)" || return 1
+  tar -xzf "$archive_path" -C "$tmpdir" || {
+    rm -rf -- "$tmpdir"
+    dz::error "Failed to extract backup."
+    return 1
+  }
+
+  if [[ -n "$(find "$tmpdir" \( -type l -o ! -type f ! -type d \) -print -quit 2>/dev/null)" ]]; then
+    rm -rf -- "$tmpdir"
+    dz::error "Backup contains unsupported file types"
+    return 1
+  fi
+
+  config_destination="$DREAMZSH_CONFIG_FILE"
+  [[ -L "$config_destination" ]] && config_destination="${config_destination:A}"
+  [[ -f "$tmpdir/dreamzsh.conf" ]] && {
+    sources+=("$tmpdir/dreamzsh.conf")
+    destinations+=("$config_destination")
+  }
+  for member in custom/profiles custom/plugins custom/themes custom/plugin-repos.conf; do
+    [[ -e "$tmpdir/$member" ]] || continue
+    sources+=("$tmpdir/$member")
+    case "$member" in
+      custom/profiles) destinations+=("$DREAMZSH_CUSTOM_PROFILES_DIR") ;;
+      custom/plugins) destinations+=("$DREAMZSH_CUSTOM_PLUGINS_DIR") ;;
+      custom/themes) destinations+=("$DREAMZSH_CUSTOM_THEMES_DIR") ;;
+      custom/plugin-repos.conf) destinations+=("$DREAMZSH_PLUGIN_REPOS_FILE") ;;
+    esac
+  done
+
+  (( ${#sources[@]} > 0 )) || {
+    rm -rf -- "$tmpdir"
+    dz::error "Backup does not contain supported DreamZSH user data"
+    return 1
+  }
+
+  for (( part=1; part<=${#sources[@]}; part++ )); do
+    source="${sources[part]}"
+    destination="${destinations[part]}"
+    mkdir -p "${destination:h}" || break
+    staged="${destination}.restore-new.$$"
+    old="${destination}.restore-old.$$"
+    rm -rf -- "$staged" "$old"
+    cp -R -- "$source" "$staged" || { rm -rf -- "$staged"; break; }
+    if [[ -e "$destination" || -L "$destination" ]]; then
+      mv -- "$destination" "$old" || { rm -rf -- "$staged"; break; }
+    else
+      old=""
+    fi
+    if ! mv -- "$staged" "$destination"; then
+      [[ -n "$old" ]] && mv -- "$old" "$destination" 2>/dev/null || true
+      break
+    fi
+    installed_destinations+=("$destination")
+    old_destinations+=("$old")
+  done
+
+  if (( ${#installed_destinations[@]} != ${#sources[@]} )); then
+    for (( part=${#installed_destinations[@]}; part>=1; part-- )); do
+      destination="${installed_destinations[part]}"
+      old="${old_destinations[part]}"
+      rm -rf -- "$destination"
+      [[ -n "$old" ]] && mv -- "$old" "$destination" 2>/dev/null || true
+    done
+    rm -rf -- "$tmpdir"
+    dz::error "Failed to restore backup; previous state was restored"
+    return 1
+  fi
+
+  for old in "${old_destinations[@]}"; do
+    [[ -n "$old" ]] && rm -rf -- "$old"
+  done
+  rm -rf -- "$tmpdir"
 
   dz::success "Backup restored: $archive_name"
 }

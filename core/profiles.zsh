@@ -466,6 +466,67 @@ dz::profile::safe_archive_members() {
   done < <(tar -tzf "$archive" 2>/dev/null) || return 1
 }
 
+dz::profile::verify_checksums() {
+  local tmpdir="$1"
+  local checksum_file="$tmpdir/checksums.sha256"
+  local checksum_hash checksum_path calculated source_file relative part
+  local -a package_files=()
+  local -A declared=()
+
+  [[ -s "$checksum_file" ]] || {
+    dz::error "Profile checksum list is empty"
+    return 1
+  }
+
+  while IFS=' ' read -r checksum_hash checksum_path; do
+    checksum_path="${checksum_path# }"
+    [[ "$checksum_hash" =~ '^[0-9a-fA-F]{64}$' ]] || {
+      dz::error "Invalid profile checksum entry: $checksum_path"
+      return 1
+    }
+    [[ -n "$checksum_path" && "$checksum_path" != /* && "$checksum_path" != "checksums.sha256" ]] || {
+      dz::error "Unsafe checksum path: $checksum_path"
+      return 1
+    }
+    for part in ${(s:/:)checksum_path}; do
+      [[ -n "$part" && "$part" != "." && "$part" != ".." ]] || {
+        dz::error "Unsafe checksum path: $checksum_path"
+        return 1
+      }
+    done
+    [[ -z "${declared[$checksum_path]:-}" ]] || {
+      dz::error "Duplicate profile checksum path: $checksum_path"
+      return 1
+    }
+    source_file="$tmpdir/$checksum_path"
+    [[ -f "$source_file" && ! -L "$source_file" ]] || {
+      dz::error "Profile checksum references a missing file: $checksum_path"
+      return 1
+    }
+    calculated="$(dz::profile::sha256 "$source_file")" || return 1
+    [[ "$calculated" == "$checksum_hash" ]] || {
+      dz::error "Profile checksum verification failed: $checksum_path"
+      return 1
+    }
+    declared[$checksum_path]=1
+  done < "$checksum_file"
+
+  package_files=("$tmpdir"/**/*(.N))
+  for source_file in "${package_files[@]}"; do
+    relative="${source_file#$tmpdir/}"
+    [[ "$relative" == "checksums.sha256" ]] && continue
+    [[ -n "${declared[$relative]:-}" ]] || {
+      dz::error "Profile contains an unchecked file: $relative"
+      return 1
+    }
+  done
+
+  (( ${#declared} == ${#package_files} - 1 )) || {
+    dz::error "Profile checksum inventory does not match package contents"
+    return 1
+  }
+}
+
 dz::profile::export() {
   local export_name="${1:-}"
   local output="" source_profile=""
@@ -749,6 +810,45 @@ dz::profile::install_dir() {
   return 0
 }
 
+dz::profile::can_install() {
+  local source="$1"
+  local destination="$2"
+  local overwrite="$3"
+  local origin="$4"
+  local kind="$5"
+
+  [[ -e "$destination" ]] || return 0
+
+  if [[ "$kind" == "dir" ]]; then
+    diff -qr -- "$source" "$destination" >/dev/null 2>&1 && return 0
+  else
+    cmp -s -- "$source" "$destination" && return 0
+  fi
+
+  [[ "$origin" != "builtin" && "$overwrite" -eq 1 ]] || {
+    dz::error "Import conflict: $destination"
+    return 1
+  }
+}
+
+dz::profile::rollback_import() {
+  local rollback_dir="$1"
+  shift
+  local -a destinations=("$@")
+  local destination saved
+  local index
+
+  for (( index=${#destinations[@]}; index>=1; index-- )); do
+    destination="${destinations[index]}"
+    saved="$rollback_dir/$index"
+    rm -rf -- "$destination"
+    if [[ -e "$saved" || -L "$saved" ]]; then
+      mkdir -p "${destination:h}" 2>/dev/null || true
+      cp -R -- "$saved" "$destination" 2>/dev/null || true
+    fi
+  done
+}
+
 dz::profile::import() {
   local archive="${1:-}"
   local apply_flag=0 overwrite=0 assume_yes=0
@@ -758,6 +858,9 @@ dz::profile::import() {
   local theme plugin source_file destination origin checksum_path checksum_hash
   local manifest_themes manifest_builtin manifest_custom manifest_external
   local source_meta source_url source_ref source_entry source_commit normalized_source
+  local rollback_dir profile_destination profile_origin
+  local -a transaction_sources=() transaction_destinations=() transaction_origins=() transaction_kinds=()
+  local transaction_index
 
   [[ -n "$archive" && -f "$archive" ]] || {
     dz::error "Profile archive not found: $archive"
@@ -818,19 +921,10 @@ dz::profile::import() {
     dz::error "SHA-256 support requires sha256sum or shasum"
     return 1
   }
-  while IFS=' ' read -r checksum_hash checksum_path; do
-    checksum_path="${checksum_path# }"
-    [[ "$checksum_path" != /* && "$checksum_path" != *"../"* ]] || {
-      rm -rf -- "$tmpdir"
-      dz::error "Unsafe checksum path: $checksum_path"
-      return 1
-    }
-    [[ "$(dz::profile::sha256 "$tmpdir/$checksum_path")" == "$checksum_hash" ]] || {
-      rm -rf -- "$tmpdir"
-      dz::error "Profile checksum verification failed: $checksum_path"
-      return 1
-    }
-  done < "$tmpdir/checksums.sha256"
+  dz::profile::verify_checksums "$tmpdir" || {
+    rm -rf -- "$tmpdir"
+    return 1
+  }
 
   import_profile="$(dz::profile::manifest_value "$manifest_file" profile)"
   active_theme="$(dz::profile::manifest_value "$manifest_file" active_theme)"
@@ -895,6 +989,57 @@ dz::profile::import() {
     }
   done
 
+  cat > "$tmpdir/imported.profile" <<EOF
+DREAMZSH_THEME="$active_theme"
+DREAMZSH_PLUGINS=(${(j: :)${(q)imported_plugins[@]}})
+EOF
+
+  for theme in "${themes[@]}"; do
+    source_file="$tmpdir/themes/$theme.zsh-theme"
+    origin="$(dz::theme_origin "$theme")"
+    if [[ "$origin" == "builtin" ]]; then
+      destination="$DREAMZSH_THEMES_DIR/$theme.zsh-theme"
+    else
+      destination="$DREAMZSH_CUSTOM_THEMES_DIR/$theme.zsh-theme"
+    fi
+    transaction_sources+=("$source_file")
+    transaction_destinations+=("$destination")
+    transaction_origins+=("$origin")
+    transaction_kinds+=("file")
+  done
+  for plugin in "${custom_plugins[@]}"; do
+    origin="$(dz::plugin_origin "$plugin")"
+    [[ "$origin" != "builtin" ]] || {
+      rm -rf -- "$tmpdir"
+      dz::error "Plugin conflicts with built-in: $plugin"
+      return 1
+    }
+    transaction_sources+=("$tmpdir/plugins/$plugin")
+    transaction_destinations+=("$DREAMZSH_CUSTOM_PLUGINS_DIR/$plugin")
+    transaction_origins+=("$origin")
+    transaction_kinds+=("dir")
+  done
+  profile_origin="missing"
+  [[ -f "$DREAMZSH_PROFILES_DIR/$import_profile.profile" ]] && profile_origin="builtin"
+  [[ -f "$DREAMZSH_CUSTOM_PROFILES_DIR/$import_profile.profile" ]] && profile_origin="custom"
+  profile_destination="$DREAMZSH_CUSTOM_PROFILES_DIR/$import_profile.profile"
+  transaction_sources+=("$tmpdir/imported.profile")
+  transaction_destinations+=("$profile_destination")
+  transaction_origins+=("$profile_origin")
+  transaction_kinds+=("file")
+
+  for (( transaction_index=1; transaction_index<=${#transaction_sources[@]}; transaction_index++ )); do
+    dz::profile::can_install \
+      "${transaction_sources[transaction_index]}" \
+      "${transaction_destinations[transaction_index]}" \
+      "$overwrite" \
+      "${transaction_origins[transaction_index]}" \
+      "${transaction_kinds[transaction_index]}" || {
+        rm -rf -- "$tmpdir"
+        return 1
+      }
+  done
+
   print -r -- "Profile: $import_profile"
   print -r -- "Active theme: $active_theme"
   print -r -- "Themes: ${themes[*]:--}"
@@ -915,6 +1060,19 @@ dz::profile::import() {
     [[ "$answer" == [Yy] ]] || { rm -rf -- "$tmpdir"; dz::warn "Import cancelled."; return 0; }
   fi
 
+  rollback_dir="$tmpdir/rollback"
+  mkdir -p "$rollback_dir" || { rm -rf -- "$tmpdir"; return 1; }
+  for (( transaction_index=1; transaction_index<=${#transaction_destinations[@]}; transaction_index++ )); do
+    destination="${transaction_destinations[transaction_index]}"
+    if [[ -e "$destination" || -L "$destination" ]]; then
+      cp -R -- "$destination" "$rollback_dir/$transaction_index" || {
+        rm -rf -- "$tmpdir"
+        dz::error "Failed to prepare profile import rollback"
+        return 1
+      }
+    fi
+  done
+
   for theme in "${themes[@]}"; do
     source_file="$tmpdir/themes/$theme.zsh-theme"
     origin="$(dz::theme_origin "$theme")"
@@ -924,6 +1082,7 @@ dz::profile::import() {
       destination="$DREAMZSH_CUSTOM_THEMES_DIR/$theme.zsh-theme"
     fi
     dz::profile::install_file "$source_file" "$destination" "$overwrite" "$origin" || {
+      dz::profile::rollback_import "$rollback_dir" "${transaction_destinations[@]}"
       rm -rf -- "$tmpdir"; return 1
     }
   done
@@ -933,19 +1092,14 @@ dz::profile::import() {
     [[ "$origin" != "builtin" ]] || { rm -rf -- "$tmpdir"; dz::error "Plugin conflicts with built-in: $plugin"; return 1; }
     dz::profile::install_dir "$tmpdir/plugins/$plugin" \
       "$DREAMZSH_CUSTOM_PLUGINS_DIR/$plugin" "$overwrite" "$origin" || {
+      dz::profile::rollback_import "$rollback_dir" "${transaction_destinations[@]}"
       rm -rf -- "$tmpdir"; return 1
     }
   done
 
-  origin="missing"
-  [[ -f "$DREAMZSH_PROFILES_DIR/$import_profile.profile" ]] && origin="builtin"
-  [[ -f "$DREAMZSH_CUSTOM_PROFILES_DIR/$import_profile.profile" ]] && origin="custom"
-  cat > "$tmpdir/imported.profile" <<EOF
-DREAMZSH_THEME="$active_theme"
-DREAMZSH_PLUGINS=(${(j: :)${(q)imported_plugins[@]}})
-EOF
   dz::profile::install_file "$tmpdir/imported.profile" \
-    "$DREAMZSH_CUSTOM_PROFILES_DIR/$import_profile.profile" "$overwrite" "$origin" || {
+    "$DREAMZSH_CUSTOM_PROFILES_DIR/$import_profile.profile" "$overwrite" "$profile_origin" || {
+    dz::profile::rollback_import "$rollback_dir" "${transaction_destinations[@]}"
     rm -rf -- "$tmpdir"; return 1
   }
 
