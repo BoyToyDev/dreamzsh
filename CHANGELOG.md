@@ -8,6 +8,14 @@ available in `CHANGELOG.ru.md`. New changes should first be recorded under
 
 ## Unreleased
 
+## 1.0.0 - 2026-07-29
+
+### Added
+
+- Declared the CLI, configuration, plugin metadata, and profile formats stable.
+- Published the first stable DreamZSH release with supported Linux and macOS
+  installation paths and automated CI coverage.
+
 ## 0.3.0 - 2026-07-24
 
 ### 2026-07-24
