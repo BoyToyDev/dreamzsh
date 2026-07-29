@@ -103,7 +103,8 @@ grep -Fq 'zsh is required' "$TEST_ROOT/missing.out" \
 pass "missing zsh stops installation"
 
 SCRIPT_BIN=$(command -v script || true)
-if [ -z "$SCRIPT_BIN" ]; then
+if [ -z "$SCRIPT_BIN" ] \
+  || ! "$SCRIPT_BIN" -V 2>&1 | grep -qi 'util-linux'; then
   printf 'SKIP: interactive installer tests require util-linux script\n'
   printf 'All %s available installer smoke tests passed.\n' "$TESTS_PASSED"
   exit 0
@@ -114,7 +115,7 @@ package_home="$TEST_ROOT/package-home"
 mkdir -p "$package_bin"
 make_repo_fixture "$package_home"
 
-for utility in awk cat cp grep id mkdir mktemp mv rm; do
+for utility in awk cat cp dirname grep id mkdir mktemp mv rm; do
   utility_path=$(PATH="$SYSTEM_PATH" command -v "$utility")
   ln -s "$utility_path" "$package_bin/$utility"
 done
