@@ -37,7 +37,7 @@ dz::stats::run() {
   local zsh_ver dz_ver dir_size dreamzsh_dir theme profile
 
   zsh_ver="$ZSH_VERSION"
-  dz_ver="${DREAMZSH_VERSION:-1.0.0}"
+  dz_ver="${DREAMZSH_VERSION:-1.0.1}"
 
   if [[ "$startup" == <->(|.<->) ]]; then
     startup_display="$(printf '%.0f ms' "$(( startup * 1000.0 ))")"

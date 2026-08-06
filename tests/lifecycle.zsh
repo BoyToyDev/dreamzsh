@@ -141,6 +141,40 @@ history_flush_file="$TEST_ROOT/history-flush"
   || fail "reload did not flush command history before exec"
 pass "history flush before reload"
 
+history_session_file="$TEST_ROOT/session-history"
+history_first_output="$(
+  HISTFILE="$history_session_file" zsh -f -i -c '
+    source "$DREAMZSH_DIR/plugins/history/plugin.zsh"
+    print -r -- "$HISTSIZE:$SAVEHIST"
+    print -s -- dreamzsh-persisted-command
+    fc -AI "$HISTFILE"
+  '
+)" || fail "first history session failed"
+[[ "$history_first_output" == "10000:10000" ]] \
+  || fail "history plugin kept Zsh defaults: $history_first_output"
+[[ -f "$history_session_file" ]] || fail "history file was not created"
+
+history_second_output="$(
+  HISTFILE="$history_session_file" zsh -f -i -c '
+    source "$DREAMZSH_DIR/plugins/history/plugin.zsh"
+    fc -RI "$HISTFILE"
+    fc -ln -1
+  '
+)" || fail "second history session failed"
+[[ "$history_second_output" == *dreamzsh-persisted-command* ]] \
+  || fail "history did not persist between Zsh sessions"
+pass "history persistence between Zsh sessions"
+
+history_custom_output="$(
+  HISTFILE="$TEST_ROOT/custom-history" HISTSIZE=4321 SAVEHIST=1234 zsh -f -c '
+    source "$DREAMZSH_DIR/plugins/history/plugin.zsh"
+    print -r -- "$HISTSIZE:$SAVEHIST"
+  '
+)" || fail "custom history settings session failed"
+[[ "$history_custom_output" == "4321:1234" ]] \
+  || fail "history plugin overwrote custom limits: $history_custom_output"
+pass "custom history limits are preserved"
+
 real_zsh="${commands[zsh]:-/usr/bin/zsh}"
 mkdir -p "$TEST_ROOT/zdot"
 cat > "$TEST_ROOT/zdot/.zshrc" <<EOF

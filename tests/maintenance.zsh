@@ -119,6 +119,18 @@ if dz::doctor::run >/dev/null 2>&1; then
 fi
 pass "doctor returns failure for missing core state"
 
+history_doctor_root="$test_root/history-doctor"
+export DREAMZSH_CONFIG_FILE="$repo_root/dreamzsh.conf.example"
+export HISTFILE="$history_doctor_root/history"
+DREAMZSH_PLUGINS=(history)
+if dz::doctor::run >/dev/null 2>&1; then
+  fail "doctor accepted missing history directory"
+fi
+mkdir -p "$history_doctor_root"
+: > "$HISTFILE"
+dz::doctor::run >/dev/null 2>&1 || fail "doctor rejected writable history file"
+pass "doctor validates history storage"
+
 reload_home="$test_root/reload-home"
 mkdir -p "$reload_home/custom/cache"
 print -r -- "$(( $(date +%s) ))" > "$reload_home/custom/cache/update-check"

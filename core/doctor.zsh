@@ -22,6 +22,7 @@ dz::doctor::check_item() {
 dz::doctor::run() {
   local ok=1
   local plugin
+  local history_file="${HISTFILE:-$HOME/.zsh_history}"
   local zshrc_file="${ZDOTDIR:-$HOME}/.zshrc"
   local block_start_count=0
   local block_end_count=0
@@ -71,6 +72,22 @@ dz::doctor::run() {
       ok=0
     fi
   done
+
+  if dz::array_contains history "${DREAMZSH_PLUGINS[@]}"; then
+    if [[ -e "$history_file" ]]; then
+      if [[ -f "$history_file" && -w "$history_file" ]]; then
+        dz::success "History file is writable: $history_file"
+      else
+        dz::error "History file is not writable: $history_file"
+        ok=0
+      fi
+    elif [[ -d "${history_file:h}" && -w "${history_file:h}" ]]; then
+      dz::warn "History file has not been created yet: $history_file"
+    else
+      dz::error "History directory is not writable: ${history_file:h}"
+      ok=0
+    fi
+  fi
 
   if [[ -f "$zshrc_file" ]]; then
     block_start_count=$(grep -c '^# >>> dreamzsh >>>$' "$zshrc_file" 2>/dev/null)

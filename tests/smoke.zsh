@@ -50,7 +50,7 @@ export HOME="$test_home"
 export DREAMZSH_DIR="$install_dir"
 
 output="$(run_cli version)"
-assert_contains "$output" "DreamZSH 1.0.0" "version command"
+assert_contains "$output" "DreamZSH 1.0.1" "version command"
 
 output="$(run_cli help)"
 assert_contains "$output" "Usage:" "main help"
@@ -91,7 +91,7 @@ dz::colors::enable
   || fail "color prompt sequences were truncated"
 output="$(run_cli stats)"
 assert_contains "$output" "42 ms" "startup statistics"
-assert_contains "$output" "1.0.0" "stats DreamZSH version"
+assert_contains "$output" "1.0.1" "stats DreamZSH version"
 assert_contains "$output" "$ZSH_VERSION" "stats Zsh version"
 assert_contains "$output" "3 enabled" "stats plugin count"
 assert_contains "$output" "10 available" "stats visible theme count"
